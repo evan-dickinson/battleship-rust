@@ -62,12 +62,12 @@ impl From<char> for Square {
 
 pub struct Board {
 	squares: Vec<Vec<Square>>,
-	col_counts: Vec<usize>,
-	row_counts: Vec<usize>,
+	ships_remaining_for_col: Vec<usize>,
+	ships_remaining_for_row: Vec<usize>,
 }
 
 impl Board {
-	fn parse_col_counts(count_line : &str) -> Vec<usize> {
+	fn parse_ships_remaining_for_col(count_line : &str) -> Vec<usize> {
 		// skip the first 2 chars. They're blanks.
 		return count_line.chars().skip(2).map(|char| {
 				char.to_string().parse().unwrap()
@@ -75,7 +75,7 @@ impl Board {
 			.collect();
 	}
 
-	fn parse_row_counts(lines : &[&str]) -> Vec<usize> {
+	fn parse_ships_remaining_for_row(lines : &[&str]) -> Vec<usize> {
 		return lines.iter().map(|line| {
 				let c = line.chars().next().unwrap(); // get first char in the string
 				return c.to_string().parse().unwrap();
@@ -84,6 +84,7 @@ impl Board {
 	}
 
 	fn parse_squares(lines : &[&str]) -> Vec<Vec<Square>> {
+		// TODO: Should ensure that all rows have equal length
 		return lines.iter().map(|line| {
 				return line.chars()
 					.skip(2)
@@ -103,23 +104,20 @@ impl Board {
     	let first_line = board_text[0];
     	let other_lines = &board_text[1..board_text.len()];
 
-		// TODO: Should ensure that all rows have equal length
-		// TODO: Should validate row_counts and col_counts
-
-    	let col_counts = Board::parse_col_counts(first_line);
-    	let row_counts = Board::parse_row_counts(other_lines);
-    	let squares    = Board::parse_squares(other_lines);
+		// TODO: Should validate sizes of ships remaining
 
     	return Board {
-    		squares: squares,
-    		col_counts: col_counts,
-    		row_counts: row_counts,
+    		squares: Board::parse_squares(other_lines),
+    		ships_remaining_for_col: 
+    			Board::parse_ships_remaining_for_col(first_line),
+			ships_remaining_for_row:     		
+				Board::parse_ships_remaining_for_row(other_lines),
     	};
     }
 
-    fn make_col_counts(&self) -> String {
+    fn format_col_headers(&self) -> String {
     	let prefix = "  ".to_string(); // start the line with two blanks
-    	return self.col_counts.iter()
+    	return self.ships_remaining_for_col.iter()
 	    	.map(|x| {
 	            return x.to_string();
 	        })
@@ -129,11 +127,11 @@ impl Board {
 	        });
     }
 
-    fn make_rows(&self) -> Vec<String> {
+    fn format_rows(&self) -> Vec<String> {
     	return self.squares.iter()
     		.enumerate()
     		.map(|(row_num, row)| {
-    			let row_count = self.count_for_row(row_num);
+    			let row_count = self.ships_remaining_for_row[row_num];
     			let row_head = format!("{}|", row_count);
 
     			return row.iter()
@@ -147,8 +145,8 @@ impl Board {
     }
 
     pub fn to_strings(&self) -> Vec<String> {
-    	let first_row = self.make_col_counts();
-    	let mut other_rows = self.make_rows();
+    	let first_row = self.format_col_headers();
+    	let mut other_rows = self.format_rows();
 
     	let mut out = Vec::new();
     	out.push(first_row);
@@ -157,7 +155,6 @@ impl Board {
     	return out;
     }
 
-    // TODO: ensure I don't swap rows and cols
 	pub fn num_rows(&self) -> usize {
 		return self.squares.len();
 	}
@@ -166,23 +163,15 @@ impl Board {
 		return self.squares[0].len();
 	}
 
-	pub fn count_for_row(&self, row_num : usize) -> usize {
-		return self.row_counts[row_num];
-	}
-
-	pub fn count_for_col(&self, col_num : usize) -> usize {
-		return self.col_counts[col_num];
-	}	
-
 	pub fn set(&mut self, index : Coord, value : Square) {
 		assert!(self.squares[index.row_num][index.col_num] == Square::Unknown);
 
 		self.squares[index.row_num][index.col_num] = value;
 
-		// Update row & col counts
+		// Update ships remaining
 		if value == Square::Ship {
-			self.row_counts[index.row_num] -= 1;
-			self.col_counts[index.col_num] -= 1;
+			self.ships_remaining_for_row[index.row_num] -= 1;
+			self.ships_remaining_for_col[index.col_num] -= 1;
 		}
 	}
 
@@ -233,8 +222,8 @@ impl Board {
 	// TODO: Use "ships remaining" as a name more widely
 	pub fn ships_remaining(&self, row_or_col : RowOrCol) -> usize {
 		return match row_or_col.axis {
-			Axis::Row => self.row_counts[row_or_col.index],
-			Axis::Col => self.col_counts[row_or_col.index],
+			Axis::Row => self.ships_remaining_for_row[row_or_col.index],
+			Axis::Col => self.ships_remaining_for_col[row_or_col.index],
 		}		
 	}
 
