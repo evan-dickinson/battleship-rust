@@ -15,6 +15,18 @@ pub struct Coord {
 	col_num : usize,
 }
 
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum Axis {
+	Row,
+	Col
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub struct RowOrCol {
+	pub axis : Axis,
+	pub index : usize
+}
+
 #[derive(Debug)]
 #[derive(PartialEq)]
 #[derive(Clone)]
@@ -145,6 +157,7 @@ impl Board {
     	return out;
     }
 
+    // TODO: ensure I don't swap rows and cols
 	pub fn num_rows(&self) -> usize {
 		return self.squares.len();
 	}
@@ -161,26 +174,6 @@ impl Board {
 		return self.col_counts[col_num];
 	}	
 
-	pub fn row(&self, row_num : usize) -> impl Iterator<Item = Coord> {
-		let range = 0..self.num_cols();
-		return range.map(move |col_num| {
-			return Coord {
-				col_num: col_num,
-				row_num: row_num
-			};
-		});
-	}
-
-	pub fn col(&self, col_num : usize) -> impl Iterator<Item = Coord> {
-		let range = 0..self.num_rows();
-		return range.map(move |row_num| {
-			return Coord {
-				col_num: col_num,
-				row_num: row_num
-			};
-		});
-	}
-
 	pub fn set(&mut self, index : Coord, value : Square) {
 		assert!(self.squares[index.row_num][index.col_num] == Square::Unknown);
 
@@ -190,6 +183,67 @@ impl Board {
 		if value == Square::Ship {
 			self.row_counts[index.row_num] -= 1;
 			self.col_counts[index.col_num] -= 1;
+		}
+	}
+
+	pub fn rows_and_cols(&self) -> impl Iterator<Item = RowOrCol> {
+		let rows = (0 .. self.num_rows()).map(|row_num| {
+			RowOrCol {
+				axis: Axis::Row,
+				index: row_num
+			}
+		});
+
+		let cols = (0 .. self.num_cols()).map(|col_num| {
+			RowOrCol {
+				axis: Axis::Col,
+				index: col_num
+			}
+		});		
+
+		return rows.chain(cols);
+	}
+
+	// Return all the coordinates along the specified row or col
+	pub fn coordinates(&self, row_or_col : RowOrCol) -> impl Iterator<Item = Coord>  {
+		// Count number of items in the minor axis
+		let minor_axis_ubound = match row_or_col.axis {
+			Axis::Row => self.num_cols(),
+			Axis::Col => self.num_rows()
+		};
+		let range = 0 .. minor_axis_ubound;
+
+		let major_axis_idx = row_or_col.index;
+		return range.map(move |minor_axis_idx| {
+			return match row_or_col.axis {
+				Axis::Row => Coord {
+					row_num: major_axis_idx,
+					col_num: minor_axis_idx,
+				},
+				Axis::Col => Coord {
+					row_num: minor_axis_idx,
+					col_num: major_axis_idx
+				}
+			}
+		});
+	}
+
+	// Count number of ships remaining in the given row/col
+	//
+	// TODO: Use "ships remaining" as a name more widely
+	pub fn ships_remaining(&self, row_or_col : RowOrCol) -> usize {
+		return match row_or_col.axis {
+			Axis::Row => self.row_counts[row_or_col.index],
+			Axis::Col => self.col_counts[row_or_col.index],
+		}		
+	}
+
+	// In the given row/col, replace all Unknown squares with the specified value
+	pub fn replace_unknown(&mut self, row_or_col : RowOrCol, new_value : Square) {
+		for coord in self.coordinates(row_or_col) {
+			if self[coord] == Square::Unknown {
+				self.set(coord, new_value);
+			}
 		}
 	}
 }
@@ -205,36 +259,66 @@ impl Index<Coord> for Board {
 mod solve {
 	use super::*;
 
-	fn fill_empty_rows_with_water(board : &mut Board) {
-		for row_num in 0..board.num_rows() {
-			if board.count_for_row(row_num) == 0 {
-				for coord in board.row(row_num) {
-					if board[coord] == Square::Unknown {
-						board.set(coord, Square::Water);
-					}
-				}
+	fn fill_with_water(board: &mut Board) {
+		for row_or_col in board.rows_and_cols() {
+			if board.ships_remaining(row_or_col) == 0 {
+				board.replace_unknown(row_or_col, Square::Water);
 			}
 		}
-	}	
+	}
+
+
+	// If number of Unknown squares on an axis == number of ships unaccounted for,
+	// fill the blank spots with ships
+	fn fill_with_ships(board: &mut Board) {
+		for row_or_col in board.rows_and_cols() {
+			// Count unknown squares on this row or col
+			let num_unknown = board.coordinates(row_or_col)
+				.filter(|coord| { board[*coord] == Square::Unknown } )
+				.count();				
+
+			if num_unknown == board.ships_remaining(row_or_col) {
+				board.replace_unknown(row_or_col, Square::Ship);
+			}
+		}
+	}
 
 	#[test]
-	fn it_fills_row_with_water() {
+	fn it_fills_with_water() {
     	let mut board = Board::new(vec![
-    	    "  0000",
+    	    "  0011",
     		"0|~*  ",
-    		"1|~*  ",
+    		"2|~*  ",
     	]);
 
-    	fill_empty_rows_with_water(&mut board);
+    	fill_with_water(&mut board);
 
     	let result = board.to_strings();
     	let expected = vec![
-    	    "  0000".to_string(),
+    	    "  0011".to_string(),
     		"0|~*~~".to_string(),
-    		"1|~*  ".to_string(),    	
+    		"2|~*  ".to_string(),    	
     	];
 
     	assert_eq!(result, expected);
+	}
+
+	#[test]
+	fn it_fills_with_ships() {
+		let mut board = Board::new(vec![
+    	    "  0011",
+    		"0|~*~~",
+    		"2|~*  ",
+		]);
+
+		fill_with_ships(&mut board);
+
+		let expected = vec![
+    	    "  0000".to_string(),
+    		"0|~*~~".to_string(),
+    		"0|~***".to_string(),    			
+		];
+		assert_eq!(board.to_strings(), expected);
 	}
 }
 
@@ -245,9 +329,9 @@ mod board_tests {
 
     pub fn make_test_board() -> Board {
     	let text = vec![
-    	    "  1001",
+    	    "  1101",
     		"1|~~* ",
-    		"1|  *~",
+    		"2|  *~",
     	];
 
 		return Board::new(text);
@@ -266,48 +350,105 @@ mod board_tests {
     }    
 
     #[test]
-    fn it_gets_a_col() {
-    	let board = make_test_board();
-    	let col2 : Vec<Coord> = board.col(2).collect();
+    fn it_accesses_with_index() {
+    	let mut board = make_test_board();
+    	let coord1 = Coord {
+    		row_num: 1,
+    		col_num: 0,
+    	};
 
-    	let expected_col = vec![
-    		Coord { col_num: 2, row_num: 0 },
-    		Coord { col_num: 2, row_num: 1 },
-    	];
+    	assert_eq!(board[coord1], Square::Unknown);
+    	board.set(coord1, Square::Water);
+    	assert_eq!(board[coord1], Square::Water);
 
-    	assert_eq!(col2.len(), expected_col.len());
-    	assert_eq!(col2, expected_col);
+    	let coord2 = Coord {
+    		row_num: 1,
+    		col_num: 3,
+    	};
+
+    	assert_eq!(board[coord2], Square::Water);
     }
 
     #[test]
-    fn it_accesses_with_index() {
+    fn it_accesses_col() {
+    	let board = make_test_board();
+    	let mut coords = board.coordinates(RowOrCol {
+    		axis:  Axis::Col,
+    		index: 1
+    	});
+
+    	assert_eq!(coords.next(), Some(Coord {
+    		row_num: 0,
+    		col_num: 1,
+    	}));
+    	assert_eq!(coords.next(), Some(Coord {
+    		row_num: 1,
+    		col_num: 1,
+    	}));
+    	assert_eq!(coords.next(), None);
+    }
+
+    #[test]
+    fn it_counts_ships_remaining() {
+    	let board = make_test_board();
+
+    	assert_eq!(board.ships_remaining(
+    		RowOrCol { 
+    			axis:  Axis::Row,
+    			index: 0
+    		}), 1);
+    	assert_eq!(board.ships_remaining(
+    		RowOrCol { 
+    			axis:  Axis::Row,
+    			index: 1
+    		}), 2);
+    	assert_eq!(board.ships_remaining(
+    		RowOrCol { 
+    			axis:  Axis::Col,
+    			index: 0
+    		}), 1);
+    	assert_eq!(board.ships_remaining(
+    		RowOrCol { 
+    			axis:  Axis::Col,
+    			index: 2
+    		}), 0);    	
+    }
+
+    #[test]
+    fn it_adjusts_ships_remaining_after_set() {
     	let mut board = make_test_board();
     	let coord = Coord {
     		row_num: 1,
     		col_num: 0,
     	};
 
-    	assert_eq!(board[coord], Square::Unknown);
+    	assert_eq!(board.ships_remaining(
+    		RowOrCol { 
+    			axis:  Axis::Row,
+    			index: coord.row_num
+    		}), 2);
+    	assert_eq!(board.ships_remaining(
+    		RowOrCol { 
+    			axis:  Axis::Col,
+    			index: coord.col_num
+    		}), 1);
 
-    	board.set(coord, Square::Water);
+    	board.set(coord, Square::Ship);
 
-    	assert_eq!(board[coord], Square::Water);
+    	// ships remaining has decreased
+    	assert_eq!(board.ships_remaining(
+    		RowOrCol { 
+    			axis:  Axis::Row,
+    			index: coord.row_num
+    		}), 2 - 1);
+    	assert_eq!(board.ships_remaining(
+    		RowOrCol { 
+    			axis:  Axis::Col,
+    			index: coord.col_num
+    		}), 1 - 1);    	
+
     }
 }
 
 
-#[cfg(bogus)]
-mod bogus {
-	fn set_row_to_water(&mut board : Board, row_num : usize) {
-		for coord in board.row(row_num) {
-			*board[coord] = Square::Water;
-		}
-	}
-
-	fn set_diagonal_neighbors(&mut board : Board, coord : Coord) {
-		for neighbor in board.neighbors(coord, NeighborType::Diagonal) {
-			*board[neighbor] = Square::Water;
-		}
-	}
-}
 
