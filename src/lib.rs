@@ -11,31 +11,45 @@ pub enum Square {
 	Ship
 }
 
-pub fn char_to_square(square_char : char) -> Result<Square, String> {
-	match square_char {
-		' ' => Ok(Square::Unknown),
-		'*' => Ok(Square::Ship),
-		'~' => Ok(Square::Water),
-		_   => Err("Unknown char".to_string())
+pub struct Board {
+	squares: Vec<Vec<Square>>
+}
+
+impl Board {
+	fn char_to_square(square_char : char) -> Result<Square, String> {
+		match square_char {
+			' ' => Ok(Square::Unknown),
+			'*' => Ok(Square::Ship),
+			'~' => Ok(Square::Water),
+			_   => Err("Unknown char".to_string())
+		}
+	}
+
+	fn str_to_row(line : &str) -> Result<Vec<Square>, String> {
+		let row : Result<Vec<Square>, String> = line.chars()
+			.map(Board::char_to_square)
+			.collect();
+
+		return row;	
+	}
+
+	pub fn from_string(text : &str) -> Result<Board, String> {
+		let rows : Result<Vec<Vec<Square>>, String> = text.split("\n")
+			.map(Board::str_to_row)
+			.collect();
+		
+		return match rows {
+			Ok(squares) => Ok(Board {
+				squares: squares
+			}),
+			Err(msg)    => Err(msg)
+		}
+	}	
+
+	pub fn row(&self, rowNum : usize) -> impl Iterator<Item = &Square>  {
+		return self.squares[rowNum].iter();
 	}
 }
-
-pub fn str_to_row(line : &str) -> Result<Vec<Square>, String> {
-	let row : Result<Vec<Square>, String> = line.chars()
-		.map(char_to_square)
-		.collect();
-
-	return row;	
-}
-
-pub fn str_to_rows(text : &str) -> Result<Vec<Vec<Square>>, String> {
-	let rows : Result<Vec<Vec<Square>>, String> = text.split("\n")
-		.map(str_to_row)
-		.collect();
-
-	return rows;		
-}
-
 
 #[cfg(test)]
 mod tests {
@@ -43,14 +57,14 @@ mod tests {
 
     #[test]
     fn it_finds_a_ship() {
-    	let result = char_to_square('*');
+    	let result = Board::char_to_square('*');
 
         assert_eq!(result, Ok(Square::Ship));
     }
 
     #[test]
     fn it_fails() {
-    	let result = char_to_square('q');
+    	let result = Board::char_to_square('q');
 
         assert_eq!(result, Err("Unknown char".to_string()));
     }
@@ -58,7 +72,7 @@ mod tests {
     #[test]
     fn it_makes_a_row() {
     	let line = "~~* ";
-    	let row = str_to_row(&line);
+    	let row = Board::str_to_row(&line);
 
     	let expected_row = Ok(vec![
     		Square::Water,
@@ -73,33 +87,38 @@ mod tests {
     #[test]
     fn it_fails_to_make_a_row() {
     	let line = "~q~";
-    	let row = str_to_row(&line);
+    	let row = Board::str_to_row(&line);
 
     	let expected_row = Err("Unknown char".to_string());
 
     	assert_eq!(row, expected_row);
     }    
 
+    fn make_test_board() -> Board {
+		let text = "~~* \n  *~";
+
+		return Board::from_string(text).unwrap();
+    }
+
     #[test]
-    fn it_makes_several_rows() {
-    	let text = "~~* \n  *~";
-    	let rows = str_to_rows(text);
+    fn it_gets_a_row() {
+    	let board = make_test_board();
+    	let row1 : Vec<&Square> = board.row(0).collect();
 
-    	let expected = Ok(vec![
-    		vec![
-    			Square::Water,
-    			Square::Water,
-    			Square::Ship,
-    			Square::Unknown,    			
-    		],
-    		vec![
-    			Square::Unknown,
-    			Square::Unknown,
-    			Square::Ship,
-    			Square::Water
-    		],
-    	]);
+    	let expected_row = vec![
+    		Square::Water,
+    		Square::Water,
+    		Square::Ship,
+    		Square::Unknown
+    	];
 
-    	assert_eq!(rows, expected);
+    	let items_equal = expected_row.iter()
+    		.zip(row1.iter())
+    		.all(|(a, b)| { 
+    			*a == **b 
+    		});
+
+    	assert_eq!(row1.len(), expected_row.len());
+    	assert!(items_equal);
     }
 }
