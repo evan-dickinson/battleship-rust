@@ -1,6 +1,6 @@
 // rustc --crate-type lib --emit llvm-ir lib.rs -O
 
-use std::ops::{Index,IndexMut};
+use std::ops::Index;
 
 pub mod client;
 pub mod network;
@@ -11,11 +11,13 @@ pub mod network;
 #[derive(Copy)]
 pub struct Coord {
 	row_num : usize,
-	col_num : usize
+	col_num : usize,
 }
 
 #[derive(Debug)]
 #[derive(PartialEq)]
+#[derive(Clone)]
+#[derive(Copy)]
 pub enum Square {
 	Unknown,
 	Water,
@@ -23,7 +25,9 @@ pub enum Square {
 }
 
 pub struct Board {
-	squares: Vec<Vec<Square>>
+	squares: Vec<Vec<Square>>,
+	col_counts: Vec<usize>,
+	row_counts: Vec<usize>,
 }
 
 impl Board {
@@ -44,16 +48,22 @@ impl Board {
 		return row;	
 	}
 
-	pub fn from_string(text : &str) -> Result<Board, String> {
-		let rows : Result<Vec<Vec<Square>>, String> = text.split("\n")
-			.map(Board::str_to_row)
-			.collect();
-		
+	pub fn new(board_text : Vec<&str>,  row_counts : Vec<usize>, col_counts : Vec<usize>) -> Result<Self, String> {
+		let foo = board_text.iter().map( |row_str| {
+			Board::str_to_row(row_str)
+		});
+
+		let rows : Result<Vec<Vec<Square>>, String> = foo.collect();
+
 		// TODO: Should ensure that all rows have equal length
+		// TODO: Should validate row_counts and col_counts
+		// TODO: How to implement this with the ? operator
 
 		return match rows {
 			Ok(squares) => Ok(Board {
-				squares: squares
+				squares: squares,
+				col_counts: col_counts,
+				row_counts: row_counts
 			}),
 			Err(msg)    => Err(msg)
 		}
@@ -66,6 +76,14 @@ impl Board {
 	pub fn num_cols(&self) -> usize {
 		return self.squares[0].len();
 	}
+
+	pub fn count_for_row(&self, row_num : usize) -> usize {
+		return self.row_counts[row_num];
+	}
+
+	pub fn count_for_col(&self, col_num : usize) -> usize {
+		return self.col_counts[col_num];
+	}	
 
 	pub fn row(&self, row_num : usize) -> impl Iterator<Item = Coord> {
 		let range = 0..self.num_cols();
@@ -86,6 +104,18 @@ impl Board {
 			};
 		});
 	}
+
+	pub fn set(&mut self, index : Coord, value : Square) {
+		assert!(self.squares[index.row_num][index.col_num] == Square::Unknown);
+
+		self.squares[index.row_num][index.col_num] = value;
+
+		// Update row & col counts
+		if value == Square::Ship {
+			self.row_counts[index.row_num] -= 1;
+			self.col_counts[index.col_num] -= 1;
+		}
+	}
 }
 
 impl Index<Coord> for Board {
@@ -96,14 +126,25 @@ impl Index<Coord> for Board {
 	}
 }
 
-impl IndexMut<Coord> for Board {
-	fn index_mut<'a>(&'a mut self, index: Coord) -> &'a mut Square {
-		return &mut self.squares[index.row_num][index.col_num];
-	}
+mod solve {
+	use super::*;
+
+	fn fill_empty_rows_with_water(board : &mut Board) {
+		for row_num in 0..board.num_rows() {
+			if board.count_for_row(row_num) == 0 {
+				for coord in board.row(row_num) {
+					if board[coord] == Square::Unknown {
+						board.set(coord, Square::Water);
+					}
+				}
+			}
+		}
+	}	
 }
 
+
 #[cfg(test)]
-mod tests {
+mod board_tests {
 	use super::*;
 
     #[test]
@@ -145,10 +186,19 @@ mod tests {
     	assert_eq!(row, expected_row);
     }    
 
-    fn make_test_board() -> Board {
-		let text = "~~* \n  *~";
+    pub fn make_test_board() -> Board {
+    	let text = vec![
+    		"~~* ",
+    		"  *~",
+    	];
+    	let col_counts = vec![
+    	    1, 0, 0, 1
+    	];
+    	let row_counts = vec![
+    		1, 1
+    	];
 
-		return Board::from_string(text).unwrap();
+		return Board::new(text, col_counts, row_counts).unwrap();
     }
 
     #[test]
@@ -187,7 +237,7 @@ mod tests {
 
     	assert_eq!(board[coord], Square::Unknown);
 
-    	board[coord] = Square::Water;
+    	board.set(coord, Square::Water);
 
     	assert_eq!(board[coord], Square::Water);
     }
@@ -208,6 +258,4 @@ mod bogus {
 		}
 	}
 }
-
-
 
