@@ -1,15 +1,18 @@
 // rustc --crate-type lib --emit llvm-ir lib.rs -O
 
+use std::ops::{Index,IndexMut};
+
 pub mod client;
 pub mod network;
 
 #[derive(Debug)]
 #[derive(PartialEq)]
+#[derive(Clone)]
+#[derive(Copy)]
 pub struct Coord {
-	x : usize,
-	y : usize
+	row_num : usize,
+	col_num : usize
 }
-
 
 #[derive(Debug)]
 #[derive(PartialEq)]
@@ -64,26 +67,38 @@ impl Board {
 		return self.squares[0].len();
 	}
 
-	pub fn row(&self, row_num : usize) -> impl Iterator<Item = (Coord, &Square)>  {
-		return self.squares[row_num].iter().enumerate().map(move |(col_num, square)| {
-			let location = Coord {
-				x: col_num,
-				y: row_num
+	pub fn row(&self, row_num : usize) -> impl Iterator<Item = Coord> {
+		let range = 0..self.num_cols();
+		return range.map(move |col_num| {
+			return Coord {
+				col_num: col_num,
+				row_num: row_num
 			};
-			return (location, square)
 		});
 	}
 
-	pub fn col(&self, col_num : usize) -> impl Iterator<Item = (Coord, &Square)> {
+	pub fn col(&self, col_num : usize) -> impl Iterator<Item = Coord> {
 		let range = 0..self.num_rows();
 		return range.map(move |row_num| {
-			let location = Coord {
-				x: col_num,
-				y: row_num
+			return Coord {
+				col_num: col_num,
+				row_num: row_num
 			};
-			let square = &(self.squares[row_num][col_num]);
-			return (location, square);
 		});
+	}
+}
+
+impl Index<Coord> for Board {
+	type Output = Square;
+
+	fn index(&self, index : Coord) -> &Square {
+		return &self.squares[index.row_num][index.col_num];
+	}
+}
+
+impl IndexMut<Coord> for Board {
+	fn index_mut<'a>(&'a mut self, index: Coord) -> &'a mut Square {
+		return &mut self.squares[index.row_num][index.col_num];
 	}
 }
 
@@ -149,51 +164,50 @@ mod tests {
     }    
 
     #[test]
-    fn it_gets_a_row() {
+    fn it_gets_a_col() {
     	let board = make_test_board();
-    	let row1 : Vec<(Coord, &Square)> = board.row(0).collect();
+    	let col2 : Vec<Coord> = board.col(2).collect();
 
-    	let expected_row = vec![
-    		( Coord { x: 0, y: 0 }, Square::Water),
-    		( Coord { x: 1, y: 0 }, Square::Water),
-    		( Coord { x: 2, y: 0 }, Square::Ship),
-    		( Coord { x: 3, y: 0 }, Square::Unknown)
+    	let expected_col = vec![
+    		Coord { col_num: 2, row_num: 0 },
+    		Coord { col_num: 2, row_num: 1 },
     	];
 
-    	let items_equal = expected_row.iter()
-    		.zip(row1.iter())
-    		.all(|(a, b)| { 
-    			let (a_coord, a_square) = a;
-    			let (b_coord, b_square) = b;
-
-    			return a_coord == b_coord && a_square == *b_square;
-    		});
-
-    	assert_eq!(row1.len(), expected_row.len());
-    	assert!(items_equal);
+    	assert_eq!(col2.len(), expected_col.len());
+    	assert_eq!(col2, expected_col);
     }
 
     #[test]
-    fn it_gets_a_col() {
-    	let board = make_test_board();
-    	let col2 : Vec<(Coord, &Square)> = board.col(2).collect();
+    fn it_accesses_with_index() {
+    	let mut board = make_test_board();
+    	let coord = Coord {
+    		row_num: 1,
+    		col_num: 0,
+    	};
 
-    	let expected_col = vec![
-    		( Coord { x: 2, y: 0 }, Square::Ship),
-    		( Coord { x: 2, y: 1 }, Square::Ship),
-    	];
+    	assert_eq!(board[coord], Square::Unknown);
 
-    	let items_equal = expected_col.iter()
-    		.zip(col2.iter())
-    		.all(|(a, b)| { 
-    			let (a_coord, a_square) = a;
-    			let (b_coord, b_square) = b;
+    	board[coord] = Square::Water;
 
-    			return a_coord == b_coord && a_square == *b_square;
-    		});
-
-    	assert_eq!(col2.len(), expected_col.len());
-    	assert!(items_equal);
+    	assert_eq!(board[coord], Square::Water);
     }
-
 }
+
+
+#[cfg(bogus)]
+mod bogus {
+	fn set_row_to_water(&mut board : Board, row_num : usize) {
+		for coord in board.row(row_num) {
+			*board[coord] = Square::Water;
+		}
+	}
+
+	fn set_diagonal_neighbors(&mut board : Board, coord : Coord) {
+		for neighbor in board.neighbors(coord, NeighborType::Diagonal) {
+			*board[neighbor] = Square::Water;
+		}
+	}
+}
+
+
+
