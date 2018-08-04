@@ -31,43 +31,65 @@ pub struct Board {
 }
 
 impl Board {
-	fn char_to_square(square_char : char) -> Result<Square, String> {
+	fn char_to_square(square_char : char) -> Square {
 		match square_char {
-			' ' => Ok(Square::Unknown),
-			'*' => Ok(Square::Ship),
-			'~' => Ok(Square::Water),
-			_   => Err("Unknown char".to_string())
+			' ' => Square::Unknown,
+			'*' => Square::Ship,
+			'~' => Square::Water,
+			_   => panic!("Unknown char".to_string())
 		}
 	}
 
-	fn str_to_row(line : &str) -> Result<Vec<Square>, String> {
-		let row : Result<Vec<Square>, String> = line.chars()
-			.map(Board::char_to_square)
+	fn parse_col_counts(count_line : &str) -> Vec<usize> {
+		// skip the first 2 chars. They're blanks.
+		return count_line.chars().skip(2).map(|char| {
+				char.to_string().parse().unwrap()
+			})
 			.collect();
-
-		return row;	
 	}
 
-	pub fn new(board_text : Vec<&str>,  row_counts : Vec<usize>, col_counts : Vec<usize>) -> Result<Self, String> {
-		let foo = board_text.iter().map( |row_str| {
-			Board::str_to_row(row_str)
-		});
+	fn parse_row_counts(lines : &[&str]) -> Vec<usize> {
+		return lines.iter().map(|line| {
+				let c = line.chars().next().unwrap(); // get first char in the string
+				return c.to_string().parse().unwrap();
+			})
+			.collect();
+	}
 
-		let rows : Result<Vec<Vec<Square>>, String> = foo.collect();
+	fn parse_squares(lines : &[&str]) -> Vec<Vec<Square>> {
+		return lines.iter().map(|line| {
+				return line.chars()
+					.skip(2)
+					.map(Board::char_to_square)
+					.collect();
+			})
+			.collect();
+	}
+
+    	// let text = vec![
+    	//  "  1001"
+    	// 	"1|~~* ",
+    	// 	"1|  *~",
+    	// ];
+
+    pub fn new(board_text : Vec<&str>) -> Self {
+    	let first_line = board_text[0];
+    	let other_lines = &board_text[1..board_text.len()];
 
 		// TODO: Should ensure that all rows have equal length
 		// TODO: Should validate row_counts and col_counts
-		// TODO: How to implement this with the ? operator
 
-		return match rows {
-			Ok(squares) => Ok(Board {
-				squares: squares,
-				col_counts: col_counts,
-				row_counts: row_counts
-			}),
-			Err(msg)    => Err(msg)
-		}
-	}
+    	let col_counts = Board::parse_col_counts(first_line);
+    	let row_counts = Board::parse_row_counts(other_lines);
+    	let squares    = Board::parse_squares(other_lines);
+
+    	return Board {
+    		squares: squares,
+    		col_counts: col_counts,
+    		row_counts: row_counts,
+    	};
+    }
+
 
 	pub fn num_rows(&self) -> usize {
 		return self.squares.len();
@@ -147,58 +169,14 @@ mod solve {
 mod board_tests {
 	use super::*;
 
-    #[test]
-    fn it_finds_a_ship() {
-    	let result = Board::char_to_square('*');
-
-        assert_eq!(result, Ok(Square::Ship));
-    }
-
-    #[test]
-    fn it_fails() {
-    	let result = Board::char_to_square('q');
-
-        assert_eq!(result, Err("Unknown char".to_string()));
-    }
-
-    #[test]
-    fn it_makes_a_row() {
-    	let line = "~~* ";
-    	let row = Board::str_to_row(&line);
-
-    	let expected_row = Ok(vec![
-    		Square::Water,
-    		Square::Water,
-    		Square::Ship,
-    		Square::Unknown
-    	]);
-
-    	assert_eq!(row, expected_row);
-    }
-
-    #[test]
-    fn it_fails_to_make_a_row() {
-    	let line = "~q~";
-    	let row = Board::str_to_row(&line);
-
-    	let expected_row = Err("Unknown char".to_string());
-
-    	assert_eq!(row, expected_row);
-    }    
-
     pub fn make_test_board() -> Board {
     	let text = vec![
-    		"~~* ",
-    		"  *~",
-    	];
-    	let col_counts = vec![
-    	    1, 0, 0, 1
-    	];
-    	let row_counts = vec![
-    		1, 1
+    	    "  1001",
+    		"1|~~* ",
+    		"1|  *~",
     	];
 
-		return Board::new(text, col_counts, row_counts).unwrap();
+		return Board::new(text);
     }
 
     #[test]
