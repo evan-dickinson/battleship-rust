@@ -1,6 +1,7 @@
 // rustc --crate-type lib --emit llvm-ir lib.rs -O
 
 use std::ops::Index;
+use std::fmt;
 
 pub mod client;
 pub mod network;
@@ -24,6 +25,29 @@ pub enum Square {
 	Ship
 }
 
+impl fmt::Display for Square {
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		let char = match self {
+			Square::Unknown => ' ',
+			Square::Ship    => '*',
+			Square::Water   => '~',
+		};
+
+        return write!(f, "{}", char)
+    }
+}
+
+impl From<char> for Square {
+	fn from(square_char : char) -> Self {
+		return match square_char {
+			' ' => Square::Unknown,
+			'*' => Square::Ship,
+			'~' => Square::Water,
+			_   => panic!("Unknown char".to_string())
+		}		
+	}
+}
+
 pub struct Board {
 	squares: Vec<Vec<Square>>,
 	col_counts: Vec<usize>,
@@ -31,15 +55,6 @@ pub struct Board {
 }
 
 impl Board {
-	fn char_to_square(square_char : char) -> Square {
-		match square_char {
-			' ' => Square::Unknown,
-			'*' => Square::Ship,
-			'~' => Square::Water,
-			_   => panic!("Unknown char".to_string())
-		}
-	}
-
 	fn parse_col_counts(count_line : &str) -> Vec<usize> {
 		// skip the first 2 chars. They're blanks.
 		return count_line.chars().skip(2).map(|char| {
@@ -60,7 +75,7 @@ impl Board {
 		return lines.iter().map(|line| {
 				return line.chars()
 					.skip(2)
-					.map(Board::char_to_square)
+					.map(Square::from)
 					.collect();
 			})
 			.collect();
@@ -90,6 +105,45 @@ impl Board {
     	};
     }
 
+    fn make_col_counts(&self) -> String {
+    	let prefix = "  ".to_string(); // start the line with two blanks
+    	return self.col_counts.iter()
+	    	.map(|x| {
+	            return x.to_string();
+	        })
+	        .fold(prefix, |mut acc, x| {
+	            acc.push_str(&x);
+	            return acc;
+	        });
+    }
+
+    fn make_rows(&self) -> Vec<String> {
+    	return self.squares.iter()
+    		.enumerate()
+    		.map(|(row_num, row)| {
+    			let row_count = self.count_for_row(row_num);
+    			let row_head = format!("{}|", row_count);
+
+    			return row.iter()
+    				.map(Square::to_string)
+    				.fold(row_head, |mut acc, square_str| {
+    					acc.push_str(&square_str);
+    					return acc;
+    				})
+    		})
+    		.collect();
+    }
+
+    pub fn to_strings(&self) -> Vec<String> {
+    	let first_row = self.make_col_counts();
+    	let mut other_rows = self.make_rows();
+
+    	let mut out = Vec::new();
+    	out.push(first_row);
+     	out.append(&mut other_rows);
+
+    	return out;
+    }
 
 	pub fn num_rows(&self) -> usize {
 		return self.squares.len();
@@ -162,6 +216,26 @@ mod solve {
 			}
 		}
 	}	
+
+	#[test]
+	fn it_fills_row_with_water() {
+    	let mut board = Board::new(vec![
+    	    "  0000",
+    		"0|~*  ",
+    		"1|~*  ",
+    	]);
+
+    	fill_empty_rows_with_water(&mut board);
+
+    	let result = board.to_strings();
+    	let expected = vec![
+    	    "  0000".to_string(),
+    		"0|~*~~".to_string(),
+    		"1|~*  ".to_string(),    	
+    	];
+
+    	assert_eq!(result, expected);
+	}
 }
 
 
