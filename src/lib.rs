@@ -5,6 +5,14 @@ pub mod network;
 
 #[derive(Debug)]
 #[derive(PartialEq)]
+pub struct Coord {
+	x : usize,
+	y : usize
+}
+
+
+#[derive(Debug)]
+#[derive(PartialEq)]
 pub enum Square {
 	Unknown,
 	Water,
@@ -38,16 +46,44 @@ impl Board {
 			.map(Board::str_to_row)
 			.collect();
 		
+		// TODO: Should ensure that all rows have equal length
+
 		return match rows {
 			Ok(squares) => Ok(Board {
 				squares: squares
 			}),
 			Err(msg)    => Err(msg)
 		}
-	}	
+	}
 
-	pub fn row(&self, rowNum : usize) -> impl Iterator<Item = &Square>  {
-		return self.squares[rowNum].iter();
+	pub fn num_rows(&self) -> usize {
+		return self.squares.len();
+	}
+
+	pub fn num_cols(&self) -> usize {
+		return self.squares[0].len();
+	}
+
+	pub fn row(&self, row_num : usize) -> impl Iterator<Item = (Coord, &Square)>  {
+		return self.squares[row_num].iter().enumerate().map(move |(col_num, square)| {
+			let location = Coord {
+				x: col_num,
+				y: row_num
+			};
+			return (location, square)
+		});
+	}
+
+	pub fn col(&self, col_num : usize) -> impl Iterator<Item = (Coord, &Square)> {
+		let range = 0..self.num_rows();
+		return range.map(move |row_num| {
+			let location = Coord {
+				x: col_num,
+				y: row_num
+			};
+			let square = &(self.squares[row_num][col_num]);
+			return (location, square);
+		});
 	}
 }
 
@@ -101,24 +137,63 @@ mod tests {
     }
 
     #[test]
+    fn it_returns_num_rows() {
+    	let board = make_test_board();
+    	assert_eq!(board.num_rows(), 2);
+    }
+
+    #[test]
+    fn it_returns_num_cols() {
+    	let board = make_test_board();
+    	assert_eq!(board.num_cols(), 4);
+    }    
+
+    #[test]
     fn it_gets_a_row() {
     	let board = make_test_board();
-    	let row1 : Vec<&Square> = board.row(0).collect();
+    	let row1 : Vec<(Coord, &Square)> = board.row(0).collect();
 
     	let expected_row = vec![
-    		Square::Water,
-    		Square::Water,
-    		Square::Ship,
-    		Square::Unknown
+    		( Coord { x: 0, y: 0 }, Square::Water),
+    		( Coord { x: 1, y: 0 }, Square::Water),
+    		( Coord { x: 2, y: 0 }, Square::Ship),
+    		( Coord { x: 3, y: 0 }, Square::Unknown)
     	];
 
     	let items_equal = expected_row.iter()
     		.zip(row1.iter())
     		.all(|(a, b)| { 
-    			*a == **b 
+    			let (a_coord, a_square) = a;
+    			let (b_coord, b_square) = b;
+
+    			return a_coord == b_coord && a_square == *b_square;
     		});
 
     	assert_eq!(row1.len(), expected_row.len());
     	assert!(items_equal);
     }
+
+    #[test]
+    fn it_gets_a_col() {
+    	let board = make_test_board();
+    	let col2 : Vec<(Coord, &Square)> = board.col(2).collect();
+
+    	let expected_col = vec![
+    		( Coord { x: 2, y: 0 }, Square::Ship),
+    		( Coord { x: 2, y: 1 }, Square::Ship),
+    	];
+
+    	let items_equal = expected_col.iter()
+    		.zip(col2.iter())
+    		.all(|(a, b)| { 
+    			let (a_coord, a_square) = a;
+    			let (b_coord, b_square) = b;
+
+    			return a_coord == b_coord && a_square == *b_square;
+    		});
+
+    	assert_eq!(col2.len(), expected_col.len());
+    	assert!(items_equal);
+    }
+
 }
