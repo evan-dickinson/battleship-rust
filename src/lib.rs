@@ -2,47 +2,70 @@
 
 use std::ops::Index;
 use std::fmt;
+use std::collections::HashSet;
+use std::iter::FromIterator;
 
 pub mod client;
 pub mod network;
 
-#[derive(Debug)]
-#[derive(PartialEq)]
-#[derive(Clone)]
-#[derive(Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub struct Coord {
 	row_num : usize,
 	col_num : usize,
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
+pub enum Neighbor {
+	N, NE, E, SE, S, SW, W, NW
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Axis {
 	Row,
 	Col
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct RowOrCol {
 	pub axis : Axis,
 	pub index : usize
 }
 
-#[derive(Debug)]
-#[derive(PartialEq)]
-#[derive(Clone)]
-#[derive(Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum Ship {
+	Any,
+	LeftEnd,
+	RightEnd,
+	TopEnd,
+	BottomEnd,
+	VerticalMiddle,
+	HorizontalMiddle,
+	Dot // single square
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Square {
 	Unknown,
 	Water,
-	Ship
+	Ship(Ship)
 }
 
 impl fmt::Display for Square {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		let char = match self {
 			Square::Unknown => ' ',
-			Square::Ship    => '*',
 			Square::Water   => '~',
+
+			Square::Ship(ship_type) => match ship_type {
+				Ship::Any              => '*',
+				Ship::Dot			   => '•',				
+				Ship::LeftEnd          => '<',
+				Ship::RightEnd         => '>',
+				Ship::TopEnd           => '^',
+				Ship::BottomEnd        => 'v',
+				Ship::VerticalMiddle   => '|',
+				Ship::HorizontalMiddle => '-',
+			}
 		};
 
         return write!(f, "{}", char)
@@ -53,8 +76,15 @@ impl From<char> for Square {
 	fn from(square_char : char) -> Self {
 		return match square_char {
 			' ' => Square::Unknown,
-			'*' => Square::Ship,
 			'~' => Square::Water,
+    		'*' => Square::Ship(Ship::Any),
+			'•' => Square::Ship(Ship::Dot),
+    		'<' => Square::Ship(Ship::LeftEnd),
+    		'>' => Square::Ship(Ship::RightEnd),
+    		'^' => Square::Ship(Ship::TopEnd),
+    		'v' => Square::Ship(Ship::BottomEnd),
+    		'|' => Square::Ship(Ship::VerticalMiddle),
+    		'-' => Square::Ship(Ship::HorizontalMiddle),
 			_   => panic!("Unknown char".to_string())
 		}		
 	}
@@ -164,15 +194,27 @@ impl Board {
 	}
 
 	pub fn set(&mut self, index : Coord, value : Square) {
-		assert!(self.squares[index.row_num][index.col_num] == Square::Unknown);
+		let curr_value = self.squares[index.row_num][index.col_num];
+
+		if curr_value == value {
+			return;
+		}
+
+		assert_eq!(curr_value, Square::Unknown);
 
 		self.squares[index.row_num][index.col_num] = value;
 
 		// Update ships remaining
-		if value == Square::Ship {
+		if let Square::Ship(_) = value {
 			self.ships_remaining_for_row[index.row_num] -= 1;
 			self.ships_remaining_for_col[index.col_num] -= 1;
 		}
+	}
+
+	pub fn set_bulk(&mut self, indexes : &mut Iterator<Item = Coord>, value : Square) {
+		indexes.for_each(|index| {
+			self.set(index, value);
+		});
 	}
 
 	pub fn rows_and_cols(&self) -> impl Iterator<Item = RowOrCol> {
@@ -217,9 +259,65 @@ impl Board {
 		});
 	}
 
+	pub fn all_coordinates(&self) -> impl Iterator<Item = Coord> {
+		// Don't want to capture self in any of the closures we return.
+		let num_rows = self.num_rows();
+		let num_cols = self.num_cols();
+		let num_squares = self.num_rows() * self.num_cols();
+
+		return (0..num_squares).map(move |idx| {
+			Coord {
+				row_num: idx / num_cols,
+				col_num: idx % num_cols,
+			}
+		})
+	}
+
+	pub fn coords_for_neighbors<'a>(&self, 
+			index : Coord, 
+			neighbors: &'a HashSet<&Neighbor>)
+		-> impl Iterator<Item = Coord> + 'a {
+
+		// Don't want to capture self in any of the closures we return.
+		let num_rows = self.num_rows() as isize;
+		let num_cols = self.num_cols() as isize;
+
+
+		return neighbors.iter().map(move |neighbor| {
+			let i_row_num = index.row_num as isize;
+			let i_col_num = index.col_num as isize;
+
+			// (row, col)
+			let neighbor_pos : (isize, isize) = match neighbor {
+				Neighbor::N  => (i_row_num - 1, i_col_num),
+				Neighbor::NE => (i_row_num - 1, i_col_num + 1),
+				Neighbor::E  => (i_row_num,     i_col_num + 1),
+				Neighbor::SE => (i_row_num + 1, i_col_num + 1),
+				Neighbor::S  => (i_row_num + 1, i_col_num),
+				Neighbor::SW => (i_row_num + 1, i_col_num - 1),
+				Neighbor::W  => (i_row_num,     i_col_num - 1),
+				Neighbor::NW => (i_row_num - 1, i_col_num - 1),
+			};
+			neighbor_pos
+		})
+		.filter_map(move |(row, col)| {
+			let in_bounds = row >= 0 && col >= 0 &&
+				row < num_rows &&
+				col < num_cols;
+
+			if in_bounds {
+				return Some(Coord {
+					row_num: row as usize,
+					col_num: col as usize,
+				});
+			}
+			else {
+				return None;
+			}
+		})
+	}
+
 	// Count number of ships remaining in the given row/col
-	//
-	// TODO: Use "ships remaining" as a name more widely
 	pub fn ships_remaining(&self, row_or_col : RowOrCol) -> usize {
 		return match row_or_col.axis {
 			Axis::Row => self.ships_remaining_for_row[row_or_col.index],
@@ -267,7 +365,65 @@ mod solve {
 				.count();				
 
 			if num_unknown == board.ships_remaining(row_or_col) {
-				board.replace_unknown(row_or_col, Square::Ship);
+				board.replace_unknown(row_or_col, Square::Ship(Ship::Any));
+			}
+		}
+	}
+
+	fn surround_ends_with_water(board: &mut Board) {
+		let all_neighbors = vec![
+			Neighbor::N,
+			Neighbor::NE,
+			Neighbor::E,
+			Neighbor::SE,
+			Neighbor::S,
+			Neighbor::SW,
+			Neighbor::W,
+			Neighbor::NW,
+		];
+
+		// when we find an end, surround all neighbours except for one
+		let mut left_end_neighbors : HashSet<&Neighbor>
+			= HashSet::from_iter(all_neighbors.iter());
+		left_end_neighbors.remove(&Neighbor::E);
+
+		let mut right_end_neighbors : HashSet<&Neighbor>
+			= HashSet::from_iter(all_neighbors.iter());
+		right_end_neighbors.remove(&Neighbor::W);
+
+		let mut top_end_neighbors : HashSet<&Neighbor>
+			= HashSet::from_iter(all_neighbors.iter());
+		top_end_neighbors.remove(&Neighbor::S);		
+
+		let mut bottom_end_neighbors : HashSet<&Neighbor>
+			= HashSet::from_iter(all_neighbors.iter());
+		bottom_end_neighbors.remove(&Neighbor::S);	
+
+		let ends = [
+			(Ship::LeftEnd, left_end_neighbors),
+			(Ship::RightEnd, right_end_neighbors),
+			(Ship::TopEnd, top_end_neighbors),
+			(Ship::BottomEnd, bottom_end_neighbors),
+
+		];
+
+		for curr_end in ends.iter() {
+			let end_type = curr_end.0;
+			let neighbors = &curr_end.1;
+
+			let end_coords = {
+				board.all_coordinates()
+					.filter(|coord| {
+						board[*coord] == Square::Ship(end_type)
+					})
+					.collect::<Vec<_>>()
+			};
+			for coord in end_coords {
+				let mut neighbor_coords = {
+					board.coords_for_neighbors(coord, neighbors)
+				};
+
+				board.set_bulk(&mut neighbor_coords, Square::Water);
 			}
 		}
 	}
@@ -422,7 +578,7 @@ mod board_tests {
     			index: coord.col_num
     		}), 1);
 
-    	board.set(coord, Square::Ship);
+    	board.set(coord, Square::Ship(Ship::Any));
 
     	// ships remaining has decreased
     	assert_eq!(board.ships_remaining(
@@ -435,7 +591,28 @@ mod board_tests {
     			axis:  Axis::Col,
     			index: coord.col_num
     		}), 1 - 1);    	
+    }
 
+    #[test]
+    fn it_returns_all_coordinates() {
+    	let board = make_test_board();
+    	let coords : HashSet<_> = board.all_coordinates().collect();
+
+    	assert_eq!(coords.len(), 8);
+    	let expected_coords : Vec<_> = [
+    		/* x, y */
+    		(0, 0), (0, 1), (0, 2), (0usize, 3usize),
+    		(1, 0), (1, 1), (1, 2), (1, 3),
+    	].iter()
+    	.map(|(x, y)| { Coord { row_num: *x, col_num: *y } })
+    	.collect();
+
+    	println!("coords: {:?}", coords);
+
+    	for expected in expected_coords {
+    		assert!(coords.contains(&expected), 
+    			"Should have contained {:?}", expected);
+    	}
     }
 }
 
