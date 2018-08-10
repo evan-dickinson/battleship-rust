@@ -485,26 +485,27 @@ mod solve {
         }
     }
 
-    // fn fill_diagonals_with_water(board: &mut Board) {
-    //     let ship_coords = {
-    //         board.all_coordinates()
-    //             .filter(|coord| { board[*coord].is_ship() })
-    //             .collect::<Vec<_>>()
-    //     };
-    //     for coord in ship_coords {
-    //         let mut neighbor_coords = {
-    //             let diagonals = vec![
-    //                 Neighbor::NE,
-    //                 Neighbor::SE,
-    //                 Neighbor::NW,
-    //                 Neighbor::SW
-    //             ];
-    //             board.coords_for_neighbors(coord, diagonals)
-    //         };
+    fn fill_diagonals_with_water(board: &mut Board) {
+        let diagonals = [
+            Neighbor::NE,
+            Neighbor::SE,
+            Neighbor::NW,
+            Neighbor::SW
+        ];
+        
+        let ship_coords = {
+            board.layout.all_coordinates()
+                .filter(|coord| { board[*coord].is_ship() })
+                .collect::<Vec<_>>()
+        };
+        for coord in ship_coords {
+            let mut neighbor_coords = {
+                board.layout.coords_for_neighbors(coord, diagonals.iter())
+            };
 
-    //         board.set_bulk(&mut neighbor_coords, Square::Water);
-    //     }
-    // }
+            board.set_bulk(&mut neighbor_coords, Square::Water);
+        }
+    }
 }
 
 
