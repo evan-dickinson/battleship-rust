@@ -76,108 +76,41 @@ fn it_fills_with_ships() {
     assert_eq!(board.to_strings(), expected);
 }
 
-fn surround_dots_with_water(board: &mut Board) {
+fn surround_ships_with_water(board: &mut Board) {
     let layout = board.layout;
     let ship_coords = {
         layout.all_coordinates()
-            .filter(|coord| { 
-                board[*coord] == Square::Ship(Ship::Dot)
-            })
+            .filter(|coord| { board[*coord].is_ship() })
             .collect::<Vec<_>>()
     };
 
     for coord in ship_coords {
-        let neighbors = Neighbor::all_neighbors();
-        let mut neighbor_coords = layout.coords_for_neighbors(coord, neighbors.iter());
-        board.set_bulk(&mut neighbor_coords, Square::Water);
-    }
-}
+        let ship_type = match board[coord] {
+            Square::Ship(ship_type) => ship_type,
+            _ => panic!("Unexpected"),
+        };
 
-#[test]
-fn it_surrounds_dots() {
-    let mut board = Board::new(vec![
-        "  00000",
-        "0|     ",
-        "0|  •  ",
-        "0|     ",
-    ]);
+        let neighbors = match ship_type {
+            Ship::Any       => vec![
+                Neighbor::NW, Neighbor::NE,
+                Neighbor::SW, Neighbor::SE,
+            ],
 
-    surround_dots_with_water(&mut board);
-    let expected = vec![
-        "  00000",
-        "0| ~~~ ",
-        "0| ~•~ ",
-        "0| ~~~ ",
-    ].iter().map(|x| x.to_string()).collect::<Vec<_>>();
-    assert_eq!(board.to_strings(), expected);        
-}
+            Ship::Dot       => Neighbor::all_neighbors(),
 
-fn surround_ends_with_water(board: &mut Board) {
-   let all_neighbors = Neighbor::all_neighbors();
+            Ship::LeftEnd   => Neighbor::all_except(Neighbor::E),
+            Ship::RightEnd  => Neighbor::all_except(Neighbor::W),
+            Ship::TopEnd    => Neighbor::all_except(Neighbor::S),
+            Ship::BottomEnd => Neighbor::all_except(Neighbor::N),
 
-    let ends = [
-        // (a, b)
-        // when you find a, fill in all neighbours except b
-        (Ship::LeftEnd, Neighbor::E),
-        (Ship::RightEnd, Neighbor::W),
-        (Ship::TopEnd, Neighbor::S),
-        (Ship::BottomEnd, Neighbor::N),
-    ];
-
-    let layout = board.layout;
-
-    let neighbors_of_ships = ends.iter()
-        // find all coords containing a ship of type end_type
-        .map(|(end_type, ignore_neighbor)| {
-            let nc = all_neighbors.clone();
-
-            layout.all_coordinates()
-                .filter(|coord| {
-                    board[*coord] == Square::Ship(*end_type)
-                })
-                .map(|coord| {
-                    let neighbors = nc.into_iter()
-                        .filter(|&n| { *n != *ignore_neighbor });
-
-                    layout.coords_for_neighbors(coord, neighbors)
-                        .collect::<Vec<Coord>>()
-                })
-                .fold(vec![], move |mut acc, mut curr_vec| {
-                    acc.append(&mut curr_vec);
-                    acc
-                })
-        })
-        .collect::<Vec<Vec<Coord>>>();
-
-    for neighbor_coords in neighbors_of_ships {
-        for coord in neighbor_coords {
-            board.set(coord, Square::Water);
-        }            
-    }
-}
-
-fn surround_middles_with_water(board: &mut Board) {
-    let layout = board.layout;
-    let ship_coords = {
-        layout.all_coordinates()
-            .filter(|coord| { 
-                board[*coord] == Square::Ship(Ship::VerticalMiddle) ||
-                board[*coord] == Square::Ship(Ship::HorizontalMiddle)
-            })
-            .collect::<Vec<_>>()
-    };
-
-    for coord in ship_coords {
-        let neighbors = match board[coord] {
-            Square::Ship(Ship::VerticalMiddle) => [
+            Ship::VerticalMiddle => vec![
                 Neighbor::NE, Neighbor::E, Neighbor::SE,
                 Neighbor::NW, Neighbor::W, Neighbor::SW,
             ],
-            Square::Ship(Ship::HorizontalMiddle) => [
+            Ship::HorizontalMiddle => vec![
                 Neighbor::NW, Neighbor::N, Neighbor::NE,
                 Neighbor::SW, Neighbor::S, Neighbor::SE,
             ],
-            _   => panic!("Should not happen"),
         };
 
 
@@ -186,29 +119,6 @@ fn surround_middles_with_water(board: &mut Board) {
     }
 }
 
-
-fn fill_diagonals_with_water(board: &mut Board) {
-    let diagonals = [
-        Neighbor::NE,
-        Neighbor::SE,
-        Neighbor::NW,
-        Neighbor::SW
-    ];
-
-    let layout = board.layout;
-
-    let ship_coords = {
-        layout.all_coordinates()
-            .filter(|coord| { board[*coord].is_ship() })
-            .collect::<Vec<_>>()
-    };
-    for coord in ship_coords {
-        let mut neighbor_coords = 
-            layout.coords_for_neighbors(coord, diagonals.iter());
-
-        board.set_bulk(&mut neighbor_coords, Square::Water);
-    }
-}
 
 #[test]
 fn it_fills_diagonals() {
@@ -221,7 +131,7 @@ fn it_fills_diagonals() {
         "0|     ",
     ]);
 
-    fill_diagonals_with_water (&mut board);
+    surround_ships_with_water(&mut board);
     let expected = vec![
         "  00000",
         "0|     ",
@@ -232,6 +142,63 @@ fn it_fills_diagonals() {
     ].iter().map(|x| x.to_string()).collect::<Vec<_>>();
     assert_eq!(board.to_strings(), expected);
 }    
+
+#[test]
+fn it_surrounds_dots() {
+    let mut board = Board::new(vec![
+        "  00000",
+        "0|     ",
+        "0|  •  ",
+        "0|     ",
+    ]);
+
+    surround_ships_with_water(&mut board);
+    let expected = vec![
+        "  00000",
+        "0| ~~~ ",
+        "0| ~•~ ",
+        "0| ~~~ ",
+    ].iter().map(|x| x.to_string()).collect::<Vec<_>>();
+    assert_eq!(board.to_strings(), expected);        
+}
+
+#[test]
+fn it_surrounds_middles() {
+    let mut board = Board::new(vec![
+        "  00000",
+        "0|     ",
+        "0|  -  ",
+        "0|     ",
+    ]);
+
+    surround_ships_with_water(&mut board);
+    let expected = vec![
+        "  00000",
+        "0| ~~~ ",
+        "0|  -  ",
+        "0| ~~~ ",
+    ].iter().map(|x| x.to_string()).collect::<Vec<_>>();
+    assert_eq!(board.to_strings(), expected);        
+}
+
+#[test]
+fn it_surrounds_ends() {
+    let mut board = Board::new(vec![
+        "  00000",
+        "0|     ",
+        "0|  ^  ",
+        "0|     ",
+    ]);
+
+    surround_ships_with_water(&mut board);
+    let expected = vec![
+        "  00000",
+        "0| ~~~ ",
+        "0| ~^~ ",
+        "0| ~ ~ ",
+    ].iter().map(|x| x.to_string()).collect::<Vec<_>>();
+    assert_eq!(board.to_strings(), expected);        
+}
 
 fn place_ships_next_to_ends(board: &mut Board) {
     let layout = board.layout;

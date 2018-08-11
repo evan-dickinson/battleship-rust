@@ -5,8 +5,8 @@ pub enum Neighbor {
 }
 
 impl Neighbor {
-    pub fn all_neighbors() -> [Neighbor; 8] {
-        let all_neighbors = [
+    pub fn all_neighbors() -> Vec<Neighbor> {
+        let all_neighbors = vec![
             Neighbor::N,
             Neighbor::NE,
             Neighbor::E,
@@ -18,5 +18,12 @@ impl Neighbor {
         ];
 
         return all_neighbors;
+    }
+
+    pub fn all_except(exclude : Neighbor) -> Vec<Neighbor> {
+        return Neighbor::all_neighbors().iter()
+            .filter(|&x| *x != exclude)
+            .map(|x| *x)
+            .collect::<Vec<Neighbor>>();
     }
 }
