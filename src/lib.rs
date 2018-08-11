@@ -6,9 +6,6 @@ use std::collections::HashSet;
 use std::iter::FromIterator;
 use std::iter::IntoIterator;
 
-pub mod client;
-pub mod network;
-
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub struct Coord {
     row_num : usize,
