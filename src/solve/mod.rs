@@ -8,14 +8,11 @@ use self::fill_unknown::*;
 mod surround;
 use self::surround::*;
 
+mod specify_ships;
+use self::specify_ships::*;
+
 // TODO: Checks to implement:
-// - Convert "any" to specific ships:
-//   - to dot, when fully surrounded
-//   - to end, when surrounded by water and/or edge of board
-//   - to vert middle, when surrounded by water on left/right
-//   - to horz middle, when surrounded by water on top/bottom
-//   - to generic middle, when surrounded by diagonals
-//     + check for edge of board, too, not just surrounded by water
+// * Count ships (1 x size 3, 2 x size 2, etc.)
 
 fn place_ships_next_to_ends(board: &mut Board, changed: &mut bool) {
     let layout = board.layout;

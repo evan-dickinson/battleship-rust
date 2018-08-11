@@ -133,14 +133,34 @@ impl Board {
             return;
         }
 
-        assert_eq!(curr_value, Square::Unknown);
+        // Check for logic errors. You can only:
+        // - Refine Ship::Any to a more specific kind of ship
+        // - Change Unknown to another value
+
+        let was_already_ship;
+        if curr_value == Square::Ship(Ship::Any) {
+            let is_ship = match value {
+                Square::Ship(_) => true,
+                _               => false,
+            };
+            assert_eq!(is_ship, true);
+
+            was_already_ship = true;
+        }
+        else {
+            assert_eq!(curr_value, Square::Unknown);
+
+            was_already_ship = false;
+        }
 
         self.squares[index.row_num][index.col_num] = value;
 
         // Update ships remaining
         if let Square::Ship(_) = value {
-            self.ships_remaining_for_row[index.row_num] -= 1;
-            self.ships_remaining_for_col[index.col_num] -= 1;
+            if !was_already_ship {
+                self.ships_remaining_for_row[index.row_num] -= 1;
+                self.ships_remaining_for_col[index.col_num] -= 1;
+            }
         }
 
         *changed = true;
