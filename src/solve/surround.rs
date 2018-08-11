@@ -20,29 +20,7 @@ pub fn surround_ships_with_water(board: &mut Board, changed: &mut bool) {
             _ => panic!("Unexpected"),
         };
 
-        let neighbors = match ship_type {
-            Ship::Any       => vec![
-                Neighbor::NW, Neighbor::NE,
-                Neighbor::SW, Neighbor::SE,
-            ],
-
-            Ship::Dot       => Neighbor::all_neighbors(),
-
-            Ship::LeftEnd   => Neighbor::all_except(Neighbor::E),
-            Ship::RightEnd  => Neighbor::all_except(Neighbor::W),
-            Ship::TopEnd    => Neighbor::all_except(Neighbor::S),
-            Ship::BottomEnd => Neighbor::all_except(Neighbor::N),
-
-            Ship::VerticalMiddle => vec![
-                Neighbor::NE, Neighbor::E, Neighbor::SE,
-                Neighbor::NW, Neighbor::W, Neighbor::SW,
-            ],
-            Ship::HorizontalMiddle => vec![
-                Neighbor::NW, Neighbor::N, Neighbor::NE,
-                Neighbor::SW, Neighbor::S, Neighbor::SE,
-            ],
-        };
-
+        let neighbors = Neighbor::surrounding_neighbors(ship_type);
 
         let mut neighbor_coords = layout.coords_for_neighbors(coord, neighbors.iter());
         board.set_bulk(&mut neighbor_coords, Square::Water, changed);

@@ -12,6 +12,21 @@ pub enum Ship {
     Dot // single square
 }
 
+impl Ship {
+    pub fn all() -> Vec<Ship> {
+        return vec! [
+            Ship::Any,
+            Ship::LeftEnd,
+            Ship::RightEnd,
+            Ship::TopEnd,
+            Ship::BottomEnd,
+            Ship::VerticalMiddle,
+            Ship::HorizontalMiddle,
+            Ship::Dot
+        ];
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Square {
     Unknown,
