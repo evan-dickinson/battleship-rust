@@ -10,18 +10,16 @@ use self::solve::*;
 
 fn main() {
     let mut board = Board::new(vec![
-        "  122122",
+        "  112121",
         "2|      ",
         "0|      ",
-        "5| >    ",
+        "4| >    ",
         "0|      ",
-        "3|     •",
+        "2|     •",
         "0|      ",
     ]);
 
     solve(&mut board);
 
-    for str in board.to_strings() {
-    	println!("{}", str);
-    }
+    board.print();
 }

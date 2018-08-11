@@ -11,6 +11,10 @@ pub struct Board {
 }
 
 impl Board {
+    /////////////////////////////////////////////////////////////////////
+    //
+    // Board creation
+
     fn parse_ships_remaining_for_col(count_line : &str) -> Vec<usize> {
         // skip the first 2 chars. They're blanks.
         return count_line.chars().skip(2).map(|char| {
@@ -67,6 +71,10 @@ impl Board {
         };
     }
 
+    /////////////////////////////////////////////////////////////////////
+    //
+    // Printing / converting to string
+
     fn format_col_headers(&self) -> String {
         let prefix = "  ".to_string(); // start the line with two blanks
         return self.ships_remaining_for_col.iter()
@@ -107,6 +115,16 @@ impl Board {
         return out;
     }
 
+    pub fn print(&self) {
+        for str in self.to_strings() {
+            println!("{}", str);
+        }        
+    }
+
+    /////////////////////////////////////////////////////////////////////
+    //
+    // Setting values
+
     // changed: set to true if board[index] != value, othewise do not set
     pub fn set(&mut self, index : Coord, value : Square, changed : &mut bool) {
         let curr_value = self.squares[index.row_num][index.col_num];
@@ -139,7 +157,7 @@ impl Board {
         return match row_or_col.axis {
             Axis::Row => self.ships_remaining_for_row[row_or_col.index],
             Axis::Col => self.ships_remaining_for_col[row_or_col.index],
-        }       
+        }
     }
 
     // In the given row/col, replace all Unknown squares with the specified value
@@ -303,5 +321,55 @@ mod test {
                 axis:  Axis::Col,
                 index: coord.col_num
             }), 1 - 1);     
+    }
+
+    #[test]
+    fn it_accesses_col_contents() {
+        let board = Board::new(vec![
+            "  000",
+            "0| ^ ",
+            "0| | ",
+            "0| v ",
+            "0  ~ ",
+        ]);
+
+        let col = RowOrCol {
+            axis:  Axis::Col,
+            index: 1,
+        };
+
+        let mut col_coords = board.layout.coordinates(col);
+
+        let mut expected_coord;
+
+        expected_coord = Coord{
+            row_num: 0,
+            col_num: 1,
+        };
+        assert_eq!(col_coords.next(), Some(expected_coord));
+        assert_eq!(board[expected_coord], Square::Ship(Ship::TopEnd));
+
+        expected_coord = Coord{
+            row_num: 1,
+            col_num: 1,
+        };
+        assert_eq!(col_coords.next(), Some(expected_coord));
+        assert_eq!(board[expected_coord], Square::Ship(Ship::VerticalMiddle));
+
+        expected_coord = Coord{
+            row_num: 2,
+            col_num: 1,
+        };
+        assert_eq!(col_coords.next(), Some(expected_coord));
+        assert_eq!(board[expected_coord], Square::Ship(Ship::BottomEnd));
+
+        expected_coord = Coord{
+            row_num: 3,
+            col_num: 1,
+        };
+        assert_eq!(col_coords.next(), Some(expected_coord));
+        assert_eq!(board[expected_coord], Square::Water);
+
+        assert_eq!(col_coords.next(), None);
     }
 }

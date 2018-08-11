@@ -1,3 +1,5 @@
+use std::fmt;
+
 use neighbor::*;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
@@ -12,10 +14,27 @@ pub enum Axis {
     Col
 }
 
+impl fmt::Display for Axis {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let label = match self {
+            Axis::Row => "Row",
+            Axis::Col => "Col",
+        };
+
+        return write!(f, "{}", label);
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct RowOrCol {
     pub axis : Axis,
     pub index : usize
+}
+
+impl fmt::Display for RowOrCol {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        return write!(f, "{}: {}", self.axis, self.index);
+    }
 }
 
 // all methods relating to a board's coordinates, width, and height
@@ -159,5 +178,5 @@ mod layout_tests {
             assert!(coords.contains(&expected), 
                 "Should have contained {:?}", expected);
         }
-    }    
+    }
 }

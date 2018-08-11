@@ -2,6 +2,8 @@ use square::*;
 use neighbor::*;
 use board::*;
 
+mod fill_unknown;
+use self::fill_unknown::*;
 
 // TODO: Checks to implement:
 // - Convert "any" to specific ships:
@@ -11,69 +13,6 @@ use board::*;
 //   - to horz middle, when surrounded by water on top/bottom
 //   - to generic middle, when surrounded by diagonals
 //     + check for edge of board, too, not just surrounded by water
-
-fn fill_with_water(board: &mut Board, changed : &mut bool) {
-    for row_or_col in board.layout.rows_and_cols() {
-        if board.ships_remaining(row_or_col) == 0 {
-            board.replace_unknown(row_or_col, Square::Water, changed);
-        }
-    }
-}
-
-#[test]
-fn it_fills_with_water() {
-    let mut board = Board::new(vec![
-        "  0011",
-        "0|~*  ",
-        "2|~*  ",
-    ]);
-
-    let mut _changed = false;
-    fill_with_water(&mut board, &mut _changed);
-
-    let result = board.to_strings();
-    let expected = vec![
-        "  0011".to_string(),
-        "0|~*~~".to_string(),
-        "2|~*  ".to_string(),       
-    ];
-
-    assert_eq!(result, expected);
-}
-
-// If number of Unknown squares on an axis == number of ships unaccounted for,
-// fill the blank spots with ships
-fn fill_with_ships(board: &mut Board, changed: &mut bool) {
-    for row_or_col in board.layout.rows_and_cols() {
-        // Count unknown squares on this row or col
-        let num_unknown = board.layout.coordinates(row_or_col)
-            .filter(|coord| { board[*coord] == Square::Unknown } )
-            .count();               
-
-        if num_unknown == board.ships_remaining(row_or_col) {
-            board.replace_unknown(row_or_col, Square::Ship(Ship::Any), changed);
-        }
-    }
-}
-
-#[test]
-fn it_fills_with_ships() {
-    let mut board = Board::new(vec![
-        "  0011",
-        "0|~*~~",
-        "2|~*  ",
-    ]);
-
-    let mut _changed = false;
-    fill_with_ships(&mut board, &mut _changed);
-
-    let expected = vec![
-        "  0000".to_string(),
-        "0|~*~~".to_string(),
-        "0|~***".to_string(),               
-    ];
-    assert_eq!(board.to_strings(), expected);
-}
 
 fn surround_ships_with_water(board: &mut Board, changed: &mut bool) {
     let layout = board.layout;
@@ -247,7 +186,6 @@ fn it_places_ships_next_to_ends() {
     assert_eq!(board.to_strings(), expected);
 }
 
-
 pub fn solve(board : &mut Board) {
     let solvers = [
         fill_with_water,
@@ -256,15 +194,23 @@ pub fn solve(board : &mut Board) {
         place_ships_next_to_ends,
     ];
 
+    board.print();
     loop {
-        let mut changed = false;
+        let mut changed_in_loop = false;
 
         for solve in solvers.iter() {
-            solve(board, &mut changed);
+            let mut changed_in_step = false;
+            solve(board, &mut changed_in_step);
+            if changed_in_step {
+                board.print();
+            }
+
+            changed_in_loop = changed_in_loop || changed_in_step;
         }
 
-        if changed == false {
+        if changed_in_loop == false {
             break;
         }
     }
 }
+
