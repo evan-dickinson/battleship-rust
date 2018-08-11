@@ -1,5 +1,3 @@
-use square::*;
-use neighbor::*;
 use board::*;
 
 mod fill_unknown;

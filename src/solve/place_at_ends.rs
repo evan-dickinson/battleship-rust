@@ -1,7 +1,6 @@
 use square::*;
 use board::*;
 use neighbor::*;
-use layout::*;
 
 pub fn place_ships_next_to_ends(board: &mut Board, changed: &mut bool) {
     let layout = board.layout;
@@ -43,20 +42,16 @@ fn do_test(before: Vec<&str>, after: Vec<&str>) {
 
 #[test]
 fn it_places_ships_next_to_ends() {
-    let mut board = Board::new(vec![
+    do_test(vec![
         "  00100",
         "0|  ^  ",
         "1|     ",
-    ]);
-
-    let mut _changed = false;
-    place_ships_next_to_ends(&mut board, &mut _changed);
-    let expected = vec![
+    ],
+	vec![
         "  00000",
         "0|  ^  ",
         "0|  *  ",    
-    ].iter().map(|x| x.to_string()).collect::<Vec<_>>();
-    assert_eq!(board.to_strings(), expected);
+    ]);
 }
 
 #[test]

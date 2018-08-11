@@ -2,8 +2,6 @@
 //
 // Convert "any" ships to specific ships
 
-use std::collections::HashSet;
-
 use square::*;
 use board::*;
 use neighbor::*;
