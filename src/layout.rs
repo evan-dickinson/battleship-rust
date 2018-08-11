@@ -1,7 +1,4 @@
-use std::collections::HashSet;
-
 use neighbor::*;
-use square::*;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub struct Coord {
@@ -135,10 +132,11 @@ impl Layout {
     }    
 }
 
-use test_utils::*;
+#[cfg(test)] use test_utils::*;
 
 #[cfg(test)]
 mod layout_tests {
+    use std::collections::HashSet;
     use super::*;
 
     #[test]

@@ -1,3 +1,4 @@
+#[cfg(test)]
 use board::*;
 
 #[cfg(test)]

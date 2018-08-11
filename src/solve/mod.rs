@@ -1,6 +1,5 @@
 use square::*;
 use neighbor::*;
-use layout::*;
 use board::*;
 
 

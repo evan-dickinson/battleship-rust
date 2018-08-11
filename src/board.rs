@@ -1,6 +1,5 @@
 use std::ops::Index;
 
-use neighbor::*;
 use square::*;
 use layout::*;
 
@@ -161,7 +160,7 @@ impl Index<Coord> for Board {
     }
 }
 
-use test_utils::*;
+#[cfg(test)] use test_utils::*;
 
 #[cfg(test)]
 mod test {
