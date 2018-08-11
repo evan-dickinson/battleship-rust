@@ -529,6 +529,37 @@ mod solve {
         }
     }
 
+    fn surround_middles_with_water(board: &mut Board) {
+        let layout = board.layout;
+        let ship_coords = {
+            layout.all_coordinates()
+                .filter(|coord| { 
+                    board[*coord] == Square::Ship(Ship::VerticalMiddle) ||
+                    board[*coord] == Square::Ship(Ship::HorizontalMiddle)
+                })
+                .collect::<Vec<_>>()
+        };
+
+        for coord in ship_coords {
+            let neighbors = match board[coord] {
+                Square::Ship(Ship::VerticalMiddle) => [
+                    Neighbor::NE, Neighbor::E, Neighbor::SE,
+                    Neighbor::NW, Neighbor::W, Neighbor::SW,
+                ],
+                Square::Ship(Ship::HorizontalMiddle) => [
+                    Neighbor::NW, Neighbor::N, Neighbor::NE,
+                    Neighbor::SW, Neighbor::S, Neighbor::SE,
+                ],
+                _   => panic!("Should not happen"),
+            };
+
+
+            let mut neighbor_coords = layout.coords_for_neighbors(coord, neighbors.iter());
+            board.set_bulk(&mut neighbor_coords, Square::Water);
+        }
+    }
+
+
     fn fill_diagonals_with_water(board: &mut Board) {
         let diagonals = [
             Neighbor::NE,
@@ -618,18 +649,16 @@ mod solve {
         assert_eq!(board.to_strings(), expected);
     }
 
-
     // TODO: Checks to implement:
-    // - Surround dots with water (on all 8 sides)
-    // - Surround vert middle & horiz middle with water (on 6 sides)
+    // - Unify the "fill with water" functions
+    //   + Can handle all the separate checks with 1 algorithm
     // - Convert "any" to specific ships:
     //   - to dot, when fully surrounded
-    //   - to end, when on an edge of the board
-    //   - to end, when surrounded by water
-    //   - to middle, when surrounded on left/right or top/bottom
-    //     + also include generic middle -- unkown if vert or horz
-    // - Follow an end with a Ship::Any
-    //   - e.g., When there's a LeftEnd, set east neigbhour to Ship::Any
+    //   - to end, when surrounded by water and/or edge of board
+    //   - to vert middle, when surrounded by water on left/right
+    //   - to horz middle, when surrounded by water on top/bottom
+    //   - to generic middle, when surrounded by diagonals
+    //     + check for edge of board, too, not just surrounded by water
 }
 
 
