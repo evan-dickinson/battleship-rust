@@ -108,7 +108,8 @@ impl Board {
         return out;
     }
 
-    pub fn set(&mut self, index : Coord, value : Square) {
+    // changed: set to true if board[index] != value, othewise do not set
+    pub fn set(&mut self, index : Coord, value : Square, changed : &mut bool) {
         let curr_value = self.squares[index.row_num][index.col_num];
 
         if curr_value == value {
@@ -124,11 +125,13 @@ impl Board {
             self.ships_remaining_for_row[index.row_num] -= 1;
             self.ships_remaining_for_col[index.col_num] -= 1;
         }
+
+        *changed = true;
     }
 
-    pub fn set_bulk(&mut self, indexes : &mut Iterator<Item = Coord>, value : Square) {
+    pub fn set_bulk(&mut self, indexes : &mut Iterator<Item = Coord>, value : Square, changed : &mut bool) {
         indexes.for_each(|index| {
-            self.set(index, value);
+            self.set(index, value, changed);
         });
     }
 
@@ -141,10 +144,10 @@ impl Board {
     }
 
     // In the given row/col, replace all Unknown squares with the specified value
-    pub fn replace_unknown(&mut self, row_or_col : RowOrCol, new_value : Square) {
+    pub fn replace_unknown(&mut self, row_or_col : RowOrCol, new_value : Square, changed : &mut bool) {
         for coord in self.layout.coordinates(row_or_col) {
             if self[coord] == Square::Unknown {
-                self.set(coord, new_value);
+                self.set(coord, new_value, changed);
             }
         }
     }
@@ -159,3 +162,33 @@ impl Index<Coord> for Board {
 }
 
 
+#[cfg(test)]
+mod test {
+    use super::*;
+
+	#[test]
+	fn it_sets_changed() {
+	    let mut board = Board::new(vec![
+	        "  001",
+	        "0|   ",
+	        "1|~  ",
+	    ]);
+
+	    let mut changed = false;
+
+	    // Setting an unchanged square leaves changed alone
+	    let coord = Coord { row_num: 1, col_num: 0};
+	    board.set(coord, Square::Water, &mut changed);
+	    assert_eq!(changed, false);
+
+	    // Setting a changed square sets changed
+	    let coord = Coord { row_num: 0, col_num: 0};
+	    board.set(coord, Square::Water, &mut changed);
+	    assert_eq!(changed, true);
+
+	    // Once changed is true, don't set it back to false
+	    let coord = Coord { row_num: 0, col_num: 0};
+	    board.set(coord, Square::Water, &mut changed);
+	    assert_eq!(changed, true);
+	}
+}

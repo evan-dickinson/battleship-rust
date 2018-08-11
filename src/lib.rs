@@ -47,7 +47,8 @@ mod board_tests {
         };
 
         assert_eq!(board[coord1], Square::Unknown);
-        board.set(coord1, Square::Water);
+        let mut _changed = false;
+        board.set(coord1, Square::Water, &mut _changed);
         assert_eq!(board[coord1], Square::Water);
 
         let coord2 = Coord {
@@ -122,7 +123,8 @@ mod board_tests {
                 index: coord.col_num
             }), 1);
 
-        board.set(coord, Square::Ship(Ship::Any));
+        let mut _changed = false;
+        board.set(coord, Square::Ship(Ship::Any), &mut _changed);
 
         // ships remaining has decreased
         assert_eq!(board.ships_remaining(
