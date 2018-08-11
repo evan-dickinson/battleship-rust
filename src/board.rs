@@ -188,6 +188,14 @@ impl Board {
             }
         }
     }
+
+    /////////////////////////////////////////////////////////////////////
+    //
+    // Contents of the board
+    pub fn is_solved(&self) -> bool {
+        return self.layout.all_coordinates()
+            .all(|coord| self[coord] != Square::Unknown);
+    }
 }
 
 impl Index<Coord> for Board {
