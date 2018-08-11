@@ -20,6 +20,23 @@ pub enum Neighbor {
     N, NE, E, SE, S, SW, W, NW
 }
 
+impl Neighbor {
+    pub fn all_neighbors() -> [Neighbor; 8] {
+        let all_neighbors = [
+            Neighbor::N,
+            Neighbor::NE,
+            Neighbor::E,
+            Neighbor::SE,
+            Neighbor::S,
+            Neighbor::SW,
+            Neighbor::W,
+            Neighbor::NW,
+        ];
+
+        return all_neighbors;
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Axis {
     Row,
@@ -432,17 +449,44 @@ mod solve {
         assert_eq!(board.to_strings(), expected);
     }
 
+    fn surround_dots_with_water(board: &mut Board) {
+        let layout = board.layout;
+        let ship_coords = {
+            layout.all_coordinates()
+                .filter(|coord| { 
+                    board[*coord] == Square::Ship(Ship::Dot)
+                })
+                .collect::<Vec<_>>()
+        };
+
+        for coord in ship_coords {
+            let neighbors = Neighbor::all_neighbors();
+            let mut neighbor_coords = layout.coords_for_neighbors(coord, neighbors.iter());
+            board.set_bulk(&mut neighbor_coords, Square::Water);
+        }
+    }
+
+    #[test]
+    fn it_surrounds_dots() {
+        let mut board = Board::new(vec![
+            "  00000",
+            "0|     ",
+            "0|  •  ",
+            "0|     ",
+        ]);
+
+        surround_dots_with_water(&mut board);
+        let expected = vec![
+            "  00000",
+            "0| ~~~ ",
+            "0| ~•~ ",
+            "0| ~~~ ",
+        ].iter().map(|x| x.to_string()).collect::<Vec<_>>();
+        assert_eq!(board.to_strings(), expected);        
+    }
+
     fn surround_ends_with_water(board: &mut Board) {
-       let all_neighbors = [
-            Neighbor::N,
-            Neighbor::NE,
-            Neighbor::E,
-            Neighbor::SE,
-            Neighbor::S,
-            Neighbor::SW,
-            Neighbor::W,
-            Neighbor::NW,
-        ];
+       let all_neighbors = Neighbor::all_neighbors();
 
         let ends = [
             // (a, b)
@@ -556,7 +600,6 @@ mod solve {
             }
         }        
     }
-
 
     #[test]
     fn it_places_ships_next_to_ends() {
