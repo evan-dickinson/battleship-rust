@@ -166,50 +166,51 @@ impl Layout {
         });
     }    
 
-    pub fn coords_for_neighbors<'a>(&self, 
+    pub fn coord_for_neighbor(&self, index: Coord,
+        neighbor: Neighbor) -> Option<Coord> {
+        // convert to signed so we can check for < 0
+        let i_num_rows = self.num_rows as isize;
+        let i_num_cols = self.num_cols as isize;
+
+        let i_row_num = index.row_num as isize;
+        let i_col_num = index.col_num as isize;
+
+        let (i_row, i_col) : (isize, isize) = match neighbor {
+            Neighbor::N  => (i_row_num - 1, i_col_num),
+            Neighbor::NE => (i_row_num - 1, i_col_num + 1),
+            Neighbor::E  => (i_row_num,     i_col_num + 1),
+            Neighbor::SE => (i_row_num + 1, i_col_num + 1),
+            Neighbor::S  => (i_row_num + 1, i_col_num),
+            Neighbor::SW => (i_row_num + 1, i_col_num - 1),
+            Neighbor::W  => (i_row_num,     i_col_num - 1),
+            Neighbor::NW => (i_row_num - 1, i_col_num - 1),
+        };
+
+        let in_bounds = 
+            i_row >= 0         && i_col >= 0 &&
+            i_row < i_num_rows && i_col < i_num_cols;
+
+        if in_bounds {
+            return Some(Coord {
+                row_num: i_row as usize,
+                col_num: i_col as usize,
+            });
+        }
+        else {
+            return None;
+        }        
+    }
+
+    pub fn coords_for_neighbors<'a>(&'a self, 
             index: Coord, 
             neighbors: impl IntoIterator<Item = &'a Neighbor> + 'a)
         -> impl Iterator<Item = Coord> + 'a
         {
 
-        // Don't want to capture self in any of the closures we return.
-        let i_num_rows = self.num_rows as isize;
-        let i_num_cols = self.num_cols as isize;
-
-        // convert to signed so we can check for < 0
-        let i_row_num = index.row_num as isize;
-        let i_col_num = index.col_num as isize;
-
         return neighbors.into_iter()
-        .map(move |neighbor| {
-            // (row, col)
-            let neighbor_pos : (isize, isize) = match neighbor {
-                Neighbor::N  => (i_row_num - 1, i_col_num),
-                Neighbor::NE => (i_row_num - 1, i_col_num + 1),
-                Neighbor::E  => (i_row_num,     i_col_num + 1),
-                Neighbor::SE => (i_row_num + 1, i_col_num + 1),
-                Neighbor::S  => (i_row_num + 1, i_col_num),
-                Neighbor::SW => (i_row_num + 1, i_col_num - 1),
-                Neighbor::W  => (i_row_num,     i_col_num - 1),
-                Neighbor::NW => (i_row_num - 1, i_col_num - 1),
-            };
-            neighbor_pos
-        })
-        .filter_map(move |(i_row, i_col)| {
-            let in_bounds = 
-                i_row >= 0         && i_col >= 0 &&
-                i_row < i_num_rows && i_col < i_num_cols;
-
-            if in_bounds {
-                return Some(Coord {
-                    row_num: i_row as usize,
-                    col_num: i_col as usize,
-                });
-            }
-            else {
-                return None;
-            }
-        })
+        .filter_map(move |neighbor| {
+            self.coord_for_neighbor(index, *neighbor)
+        });
     }    
 }
 
@@ -431,7 +432,6 @@ mod solve {
         assert_eq!(board.to_strings(), expected);
     }
 
-
     fn surround_ends_with_water(board: &mut Board) {
        let all_neighbors = [
             Neighbor::N,
@@ -492,20 +492,101 @@ mod solve {
             Neighbor::NW,
             Neighbor::SW
         ];
-        
+
+        let layout = board.layout;
+
         let ship_coords = {
-            board.layout.all_coordinates()
+            layout.all_coordinates()
                 .filter(|coord| { board[*coord].is_ship() })
                 .collect::<Vec<_>>()
         };
         for coord in ship_coords {
-            let mut neighbor_coords = {
-                board.layout.coords_for_neighbors(coord, diagonals.iter())
-            };
+            let mut neighbor_coords = 
+                layout.coords_for_neighbors(coord, diagonals.iter());
 
             board.set_bulk(&mut neighbor_coords, Square::Water);
         }
     }
+
+    #[test]
+    fn it_fills_diagonals() {
+        let mut board = Board::new(vec![
+            "  00000",
+            "0|     ",
+            "0|     ",
+            "0|  *  ",
+            "0|     ",
+            "0|     ",
+        ]);
+
+        fill_diagonals_with_water (&mut board);
+        let expected = vec![
+            "  00000",
+            "0|     ",
+            "0| ~ ~ ",
+            "0|  *  ",
+            "0| ~ ~ ",
+            "0|     ",        
+        ].iter().map(|x| x.to_string()).collect::<Vec<_>>();
+        assert_eq!(board.to_strings(), expected);
+    }    
+
+    fn place_ships_next_to_ends(board: &mut Board) {
+        let layout = board.layout;
+        let ship_coords = {
+            layout.all_coordinates()
+                .filter(|coord| { board[*coord].is_ship() })
+                .collect::<Vec<_>>()
+        };
+        for coord in ship_coords {
+            let neighbor = match board[coord] {
+                Square::Ship(Ship::TopEnd) => Some(Neighbor::S),
+                Square::Ship(Ship::BottomEnd) => Some(Neighbor::N),
+                Square::Ship(Ship::LeftEnd) => Some(Neighbor::E),
+                Square::Ship(Ship::RightEnd) => Some(Neighbor::W),
+                _ => None,
+            };
+
+            if let Some(neighbor) = neighbor {
+                if let Some(neighbor_coord) = 
+                    layout.coord_for_neighbor(coord, neighbor)  {
+
+                    board.set(neighbor_coord, Square::Ship(Ship::Any));
+                }
+            }
+        }        
+    }
+
+
+    #[test]
+    fn it_places_ships_next_to_ends() {
+        let mut board = Board::new(vec![
+            "  00100",
+            "0|  ^  ",
+            "1|     ",
+        ]);
+
+        place_ships_next_to_ends(&mut board);
+        let expected = vec![
+            "  00000",
+            "0|  ^  ",
+            "0|  *  ",    
+        ].iter().map(|x| x.to_string()).collect::<Vec<_>>();
+        assert_eq!(board.to_strings(), expected);
+    }
+
+
+    // TODO: Checks to implement:
+    // - Surround dots with water (on all 8 sides)
+    // - Surround vert middle & horiz middle with water (on 6 sides)
+    // - Convert "any" to specific ships:
+    //   - to dot, when fully surrounded
+    //   - to end, when on an edge of the board
+    //   - to end, when surrounded by water
+    //   - to middle, when surrounded on left/right or top/bottom
+    //     + also include generic middle -- unkown if vert or horz
+    // - Follow an end with a Ship::Any
+    //   - e.g., When there's a LeftEnd, set east neigbhour to Ship::Any
 }
 
 
