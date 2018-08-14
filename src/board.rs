@@ -1,10 +1,13 @@
 use std::ops::Index;
+use std::collections::HashMap;
+
 
 use square::*;
 use layout::*;
 use parse::*;
 
 pub struct Board {
+    ships_to_find: HashMap<usize, usize>, // ship size => count of ships remaining
     squares: Vec<Vec<Square>>,
     ships_remaining_for_col: Vec<usize>,
     ships_remaining_for_row: Vec<usize>,
@@ -25,7 +28,8 @@ impl Board {
 
     pub fn new_from_data(squares: Vec<Vec<Square>>, 
         ships_remaining_for_row: Vec<usize>,
-        ships_remaining_for_col: Vec<usize>) -> Self {
+        ships_remaining_for_col: Vec<usize>,
+        ships_to_find: HashMap<usize, usize>) -> Self {
 
         let layout = Layout {
             num_rows: squares.len(),
@@ -36,7 +40,8 @@ impl Board {
             squares,
             ships_remaining_for_col,
             ships_remaining_for_row,
-            layout
+            layout,
+            ships_to_find
         };
     }
 
@@ -73,12 +78,37 @@ impl Board {
             .collect();
     }
 
-    pub fn to_strings(&self) -> Vec<String> {
-        let first_row = self.format_col_headers();
-        let mut other_rows = self.format_rows();
+    fn format_ships_to_find(&self) -> Option<String> {
+        if self.ships_to_find.len() == 0 {
+            return None;
+        }
 
+        let mut out = "Ships: ".to_string();
+        let ship_strings = self.ships_to_find.keys()
+            .map(|size| {
+                let count = self.ships_to_find.get(size).unwrap();
+                let msg = format!("{}sq x {}", size, count);
+                msg.to_string()
+            })
+            .collect::<Vec<_>>();
+
+        let ship_string = ship_strings.join(", ");
+
+        out.push_str(&ship_string);
+        return Some(out);
+    }
+
+    pub fn to_strings(&self) -> Vec<String> {
         let mut out = Vec::new();
-        out.push(first_row);
+
+        if let Some(ships_row) = self.format_ships_to_find() {
+            out.push(ships_row);
+        }
+
+        let header_row = self.format_col_headers();
+        out.push(header_row);
+
+        let mut other_rows = self.format_rows();
         out.append(&mut other_rows);
 
         return out;
@@ -141,14 +171,6 @@ impl Board {
         });
     }
 
-    // Count number of ships remaining in the given row/col
-    pub fn ships_remaining(&self, row_or_col : RowOrCol) -> usize {
-        return match row_or_col.axis {
-            Axis::Row => self.ships_remaining_for_row[row_or_col.index],
-            Axis::Col => self.ships_remaining_for_col[row_or_col.index],
-        }
-    }
-
     // In the given row/col, replace all Unknown squares with the specified value
     pub fn replace_unknown(&mut self, row_or_col : RowOrCol, new_value : Square, changed : &mut bool) {
         for coord in self.layout.coordinates(row_or_col) {
@@ -164,6 +186,21 @@ impl Board {
     pub fn is_solved(&self) -> bool {
         return self.layout.all_coordinates()
             .all(|coord| self[coord] != Square::Unknown);
+    }
+
+    // Count number of ships remaining in the given row/col
+    pub fn ships_remaining(&self, row_or_col : RowOrCol) -> usize {
+        return match row_or_col.axis {
+            Axis::Row => self.ships_remaining_for_row[row_or_col.index],
+            Axis::Col => self.ships_remaining_for_col[row_or_col.index],
+        }
+    }
+
+    pub fn ships_to_find(&self, ship_size : usize) -> usize {
+        return match self.ships_to_find.get(&ship_size) {
+            Some(count) => *count,
+            None        => 0,
+        }
     }
 }
 
