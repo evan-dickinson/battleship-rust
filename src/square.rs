@@ -41,6 +41,22 @@ impl Square {
             _               => false
         }
     }
+
+    pub fn from_char(square_char : char) -> Option<Self> {
+        return match square_char {
+            ' ' => Some(Square::Unknown),
+            '~' => Some(Square::Water),
+            '*' => Some(Square::Ship(Ship::Any)),
+            '•' => Some(Square::Ship(Ship::Dot)),
+            '<' => Some(Square::Ship(Ship::LeftEnd)),
+            '>' => Some(Square::Ship(Ship::RightEnd)),
+            '^' => Some(Square::Ship(Ship::TopEnd)),
+            'v' => Some(Square::Ship(Ship::BottomEnd)),
+            '|' => Some(Square::Ship(Ship::VerticalMiddle)),
+            '-' => Some(Square::Ship(Ship::HorizontalMiddle)),
+            _   => None,
+        }
+    }
 }
 
 impl fmt::Display for Square {
@@ -67,19 +83,10 @@ impl fmt::Display for Square {
 
 impl From<char> for Square {
     fn from(square_char : char) -> Self {
-        return match square_char {
-            ' ' => Square::Unknown,
-            '~' => Square::Water,
-            '*' => Square::Ship(Ship::Any),
-            '•' => Square::Ship(Ship::Dot),
-            '<' => Square::Ship(Ship::LeftEnd),
-            '>' => Square::Ship(Ship::RightEnd),
-            '^' => Square::Ship(Ship::TopEnd),
-            'v' => Square::Ship(Ship::BottomEnd),
-            '|' => Square::Ship(Ship::VerticalMiddle),
-            '-' => Square::Ship(Ship::HorizontalMiddle),
-            _   => panic!("Unknown char".to_string())
-        }       
+        return match Square::from_char(square_char) {
+            Some(square) => square,
+            None         => panic!("Unknown char".to_string()),
+        }
     }
 }
 

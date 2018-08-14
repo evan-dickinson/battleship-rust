@@ -2,6 +2,7 @@ use std::ops::Index;
 
 use square::*;
 use layout::*;
+use parse::*;
 
 pub struct Board {
     squares: Vec<Vec<Square>>,
@@ -15,59 +16,27 @@ impl Board {
     //
     // Board creation
 
-    fn parse_ships_remaining_for_col(count_line : &str) -> Vec<usize> {
-        // skip the first 2 chars. They're blanks.
-        return count_line.chars().skip(2).map(|char| {
-                char.to_string().parse().unwrap()
-            })
-            .collect();
+    pub fn new(text_lines : Vec<&str>) -> Self {
+        let mut text = text_lines.join("\n");
+        text.push_str("\n.");
+
+        return parse_board(&text);
     }
 
-    fn parse_ships_remaining_for_row(lines : &[&str]) -> Vec<usize> {
-        return lines.iter().map(|line| {
-                let c = line.chars().next().unwrap(); // get first char in the string
-                return c.to_string().parse().unwrap();
-            })
-            .collect();
-    }
+    pub fn new_from_data(squares: Vec<Vec<Square>>, 
+        ships_remaining_for_row: Vec<usize>,
+        ships_remaining_for_col: Vec<usize>) -> Self {
 
-    fn parse_squares(lines : &[&str]) -> Vec<Vec<Square>> {
-        // TODO: Should ensure that all rows have equal length
-        return lines.iter().map(|line| {
-                return line.chars()
-                    .skip(2)
-                    .map(Square::from)
-                    .collect();
-            })
-            .collect();
-    }
-
-        // let text = vec![
-        //  "  1001"
-        //  "1|~~* ",
-        //  "1|  *~",
-        // ];
-
-    pub fn new(board_text : Vec<&str>) -> Self {
-        let first_line = board_text[0];
-        let other_lines = &board_text[1..board_text.len()];
-
-        // TODO: Should validate sizes of ships remaining
-
-        let squares = Board::parse_squares(other_lines); 
         let layout = Layout {
             num_rows: squares.len(),
             num_cols: squares[0].len(),            
         };
 
-
         return Board {
-            squares: squares,
-            ships_remaining_for_col: 
-                Board::parse_ships_remaining_for_col(first_line),
-            ships_remaining_for_row:            
-                Board::parse_ships_remaining_for_row(other_lines),
-            layout: layout,
+            squares,
+            ships_remaining_for_col,
+            ships_remaining_for_row,
+            layout
         };
     }
 
@@ -358,7 +327,7 @@ mod test {
             "0| ^ ",
             "0| | ",
             "0| v ",
-            "0  ~ ",
+            "0| ~ ",
         ]);
 
         let col = RowOrCol {

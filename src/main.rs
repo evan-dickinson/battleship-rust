@@ -1,9 +1,13 @@
+#[macro_use]
+extern crate nom;
+
 mod neighbor;
 mod square;
 mod layout;
 mod board;
 mod test_utils;
 mod solve;
+mod parse;
 
 use self::board::*;
 use self::solve::*;	
