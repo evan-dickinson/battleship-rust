@@ -83,7 +83,7 @@ impl Board {
             return None;
         }
 
-        let mut out = "Ships: ".to_string();
+        let mut out = "ships: ".to_string();
         let ship_strings = self.ships_to_find.keys()
             .map(|size| {
                 let count = self.ships_to_find.get(size).unwrap();
@@ -95,6 +95,7 @@ impl Board {
         let ship_string = ship_strings.join(", ");
 
         out.push_str(&ship_string);
+        out.push('.');
         return Some(out);
     }
 
@@ -196,7 +197,21 @@ impl Board {
         }
     }
 
-    pub fn ships_to_find(&self, ship_size : usize) -> usize {
+    // Enumerate all the sizes of ships that remain to be found
+    pub fn remaining_ship_sizes<'a>(&'a self) -> impl Iterator<Item = usize> + 'a {
+        return self.ships_to_find.iter()
+            .filter_map(|(&ship_size, &count)|
+                if count > 0 {
+                    Some(ship_size)
+                }
+                else {
+                    None
+                }
+            );
+    }
+
+    // How many ships of a given size remain to be found
+    pub fn ships_to_find_for_size(&self, ship_size : usize) -> usize {
         return match self.ships_to_find.get(&ship_size) {
             Some(count) => *count,
             None        => 0,

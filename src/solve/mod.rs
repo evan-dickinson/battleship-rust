@@ -12,6 +12,9 @@ use self::specify_ships::*;
 mod place_at_ends;
 use self::place_at_ends::*;
 
+mod only_place_it_can_go;
+use self::only_place_it_can_go::*;
+
 // TODO: Checks to implement:
 // * Count ships (1 x size 3, 2 x size 2, etc.)
 

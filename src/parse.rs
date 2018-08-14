@@ -404,9 +404,9 @@ mod board_tests {
 
     	assert_eq!(board[Coord{row_num: 1, col_num: 2}], Square::Ship(Ship::Any));
 
-    	assert_eq!(board.ships_to_find(3), 0);
-    	assert_eq!(board.ships_to_find(2), 1);
-    	assert_eq!(board.ships_to_find(1), 3);
+    	assert_eq!(board.ships_to_find_for_size(3), 0);
+    	assert_eq!(board.ships_to_find_for_size(2), 1);
+    	assert_eq!(board.ships_to_find_for_size(1), 3);
     }    
 }
 

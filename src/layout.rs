@@ -8,10 +8,33 @@ pub struct Coord {
     pub col_num : usize,
 }
 
+impl Coord {
+    // Return the row or col of this coord, whichever is specified by the axis
+    pub fn row_or_col(&self, axis : Axis) -> RowOrCol {
+        return RowOrCol { axis, index: self.index_for_axis(axis) };
+    }
+
+    pub fn index_for_axis(&self, axis : Axis) -> usize {
+        return match axis {
+            Axis::Row => self.row_num,
+            Axis::Col => self.col_num,
+        };
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Axis {
     Row,
     Col
+}
+
+impl Axis {
+    pub fn cross_axis(&self) -> Self {
+        return match self {
+            Axis::Row => Axis::Col,
+            Axis::Col => Axis::Row,
+        }
+    }
 }
 
 impl fmt::Display for Axis {
@@ -45,6 +68,28 @@ pub struct Layout {
 }
 
 impl Layout {
+
+    // Return the coord that is the result of moving the eisting coord by `offset` sqares, in the given axis
+    pub fn offset(&self, coord : Coord, offset: usize, axis: Axis) -> Option<Coord> {
+        let new_coord = match axis {
+            Axis::Row => Coord { 
+                row_num: coord.row_num + offset, 
+                col_num: coord.col_num 
+            },
+            Axis::Col => Coord { 
+                row_num: coord.row_num,  
+                col_num: coord.col_num + offset 
+            },
+        };
+
+        if new_coord.row_num < self.num_rows && new_coord.col_num < self.num_cols {
+            return Some(new_coord);
+        }
+        else {
+            return None;
+        }
+    }
+
     pub fn all_coordinates(&self) -> impl Iterator<Item = Coord> {
         // Don't want to capture self in any of the closures we return.
         // TODO: Not sure that matters
@@ -178,5 +223,30 @@ mod layout_tests {
             assert!(coords.contains(&expected), 
                 "Should have contained {:?}", expected);
         }
+    }
+
+    #[test] 
+    fn it_finds_offsets() {
+        let layout = Layout { num_rows: 3, num_cols: 4 };
+
+        let coord = Coord { row_num: 1, col_num: 2};
+
+        // Row - In bounds
+        let new_coord = layout.offset(coord, 1, Axis::Row).unwrap();
+        assert_eq!(new_coord.row_num, 2);
+        assert_eq!(new_coord.col_num, 2);
+
+        // Col - in bounds
+        let new_coord = layout.offset(coord, 1, Axis::Col).unwrap();
+        assert_eq!(new_coord.row_num, 1);
+        assert_eq!(new_coord.col_num, 3);  
+
+        // Row - Out of bounds
+        let new_coord = layout.offset(coord, 2, Axis::Row);
+        assert_eq!(new_coord, None);
+
+        // Row - Out of bounds
+        let new_coord = layout.offset(coord, 2, Axis::Col);
+        assert_eq!(new_coord, None);        
     }
 }
