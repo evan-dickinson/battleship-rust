@@ -11,6 +11,7 @@ pub enum Ship {
     BottomEnd,
     VerticalMiddle,
     HorizontalMiddle,
+    AnyMiddle,
     Dot // single square
 }
 
@@ -24,6 +25,7 @@ impl Ship {
             Ship::BottomEnd,
             Ship::VerticalMiddle,
             Ship::HorizontalMiddle,
+            Ship::AnyMiddle,
             Ship::Dot
         ];
     }
@@ -88,6 +90,7 @@ impl Square {
             'v' => Some(Square::Ship(Ship::BottomEnd)),
             '|' => Some(Square::Ship(Ship::VerticalMiddle)),
             '-' => Some(Square::Ship(Ship::HorizontalMiddle)),
+            '☐' => Some(Square::Ship(Ship::AnyMiddle)),
             _   => None,
         }
     }
@@ -108,6 +111,7 @@ impl fmt::Display for Square {
                 Ship::BottomEnd        => 'v',
                 Ship::VerticalMiddle   => '|',
                 Ship::HorizontalMiddle => '-',
+                Ship::AnyMiddle        => '☐',
             }
         };
 

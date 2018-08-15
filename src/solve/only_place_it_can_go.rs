@@ -92,11 +92,15 @@ fn can_fit_ship_at_coord(board: &Board, ship_size: usize, coord: Coord, incremen
 				num_ship_squares += 1;
 			}
 
-			let expeected = Ship::expected_square_for_ship(ship_size, square_idx, incrementing_axis);
+			let expected = Ship::expected_square_for_ship(ship_size, square_idx, incrementing_axis);
 			let is_expected = 
 				board[coord] == Square::Unknown || 
 				board[coord] == Square::Ship(Ship::Any) ||
-				board[coord] == Square::Ship(expeected);
+				board[coord] == Square::Ship(expected) ||
+				(
+					board[coord] == Square::Ship(Ship::AnyMiddle) &&
+					(expected == Ship::VerticalMiddle || expected == Ship::HorizontalMiddle)
+				);
 
 			is_expected
 		});
@@ -378,5 +382,41 @@ mod test_only_place_it_can_go {
 	        "0|~ ~",	    
 	    ]);
 	}
+
+	#[test]
+	fn it_completes_generic_middle_horizontally() {
+	    do_test(vec![
+	    	"ships: 3sq x 1.",
+	    	"  01010",
+	    	"2|  ☐  ",
+	    ],
+	    vec![
+	    	"ships: 3sq x 0.",
+	    	"  00000",
+	    	"0| <-> ",
+	    ]);
+	}	
+
+	#[test]
+	fn it_completes_generic_middle_vertically() {
+	    do_test(vec![
+	    	"ships: 3sq x 1.",
+	    	"  020",
+	    	"0|   ",
+	    	"1|   ",
+	    	"0| ☐ ",
+	    	"1|   ",
+	    	"0|   ",
+	    ],
+	    vec![
+	    	"ships: 3sq x 0.",
+	    	"  000",
+	    	"0|   ",
+	    	"0| ^ ",
+	    	"0| | ",
+	    	"0| v ",
+	    	"0|   ",
+	    ]);
+	}		
 }
 

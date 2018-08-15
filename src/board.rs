@@ -147,6 +147,17 @@ impl Board {
 
             was_already_ship = true;
         }
+        else if curr_value == Square::Ship(Ship::AnyMiddle) {
+            let is_middle = match value {
+                Square::Ship(Ship::AnyMiddle) |
+                Square::Ship(Ship::VerticalMiddle) |
+                Square::Ship(Ship::HorizontalMiddle) => true,
+                _ => false,
+            };
+            assert_eq!(is_middle, true);
+
+            was_already_ship = true;
+        }
         else {
             assert_eq!(curr_value, Square::Unknown);
 

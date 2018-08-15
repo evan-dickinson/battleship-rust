@@ -52,6 +52,10 @@ impl Neighbor {
                 Neighbor::NW, Neighbor::N, Neighbor::NE,
                 Neighbor::SW, Neighbor::S, Neighbor::SE,
             ].iter().cloned().collect(),
+            Ship::AnyMiddle => vec![
+                Neighbor::NW, Neighbor::NE,
+                Neighbor::SW, Neighbor::SE,
+            ].iter().cloned().collect(),
         };
     }
 
