@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use square::*;
 use board::*;
-use layout::*;
 
 use std;
 
@@ -116,6 +115,36 @@ mod test_ships_to_find {
     		assert!(false);
     	}  
     }
+
+    #[test]
+    fn it_parses_5_ships() {
+        let text = "ships: 5sq x 1, 4sq x 1, 3sq x 2, 2sq x 3, 1sq x 4.\n";
+
+        let result = ships_to_find(&text);
+
+        if let Ok(("", ships)) = result {
+            assert_eq!(ships.len(), 5);
+
+            assert_eq!(ships[0].size, 5);
+            assert_eq!(ships[0].count, 1);
+
+            assert_eq!(ships[1].size, 4);
+            assert_eq!(ships[1].count, 1);
+
+            assert_eq!(ships[2].size, 3);
+            assert_eq!(ships[2].count, 2);   
+
+            assert_eq!(ships[3].size, 2);
+            assert_eq!(ships[3].count, 3);   
+
+            assert_eq!(ships[4].size, 1);
+            assert_eq!(ships[4].count, 4);            
+        }
+        else {
+            println!("{:?}", result);
+            assert!(false);
+        }  
+    }    
 
     #[test]
     fn it_parses_ships_on_multiple_lines() {
@@ -369,6 +398,7 @@ pub fn parse_board(text: &str) -> Board {
 #[cfg(test)]
 mod board_tests {
     use super::*;
+    use layout::*;
 
     #[test]
     fn it_parses_board_no_ships_to_find() {

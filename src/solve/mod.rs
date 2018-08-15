@@ -25,6 +25,7 @@ pub fn solve(board : &mut Board) {
         surround_ships_with_water,
         place_ships_next_to_ends,
         specify_ships,
+        find_only_place_for_ships,
     ];
 
     board.print();

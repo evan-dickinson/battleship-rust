@@ -35,6 +35,8 @@ fn main() {
     ];
 
     let _puzzle3 = vec![
+        "ships: 5sq x 1, 4sq x 1, 3sq x 2, ",
+        "       2sq x 3, 1sq x 4.",
         "  3014161320",
         "0|         •",
         "4|          ",

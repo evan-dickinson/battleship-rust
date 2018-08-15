@@ -22,8 +22,10 @@ fn find_only_place_for_ship(board: &mut Board, ship_size: usize, num_ships: usiz
 	board.iterate_possible_ships(ship_size, |coord, incrementing_axis| {
 		let constant_axis = incrementing_axis.cross_axis();
 
-		if can_fit_ship_at_coord(board, ship_size, coord, incrementing_axis) &&
-			enough_free_ships_on_constant_axis(board, ship_size, coord, constant_axis) &&
+		let (can_fit, num_ship_squares) = can_fit_ship_at_coord(board, ship_size, coord, incrementing_axis);
+
+		if  can_fit &&
+			enough_free_ships_on_constant_axis(board, ship_size, coord, constant_axis, num_ship_squares) &&
 			enough_free_ships_on_incrementing_axis(board, ship_size, coord, incrementing_axis) {
 
 			placements.push((coord, incrementing_axis));
@@ -48,14 +50,14 @@ fn place_ship_at_coord(board: &mut Board, ship_size: usize, coord: Coord, increm
 
 // constant axis: The one that remains the same as we increment through coordinats
 // incrementing axis: The one that changes as we increment through coordinates
-fn enough_free_ships_on_constant_axis(board: &Board, ship_size: usize, coord: Coord, constant_axis: Axis) -> bool {
+fn enough_free_ships_on_constant_axis(board: &Board, ship_size: usize, coord: Coord, constant_axis: Axis, num_ship_squares: usize) -> bool {
 	let row_or_col = RowOrCol {
 		axis:  constant_axis,
 		index: coord.index_for_axis(constant_axis),
 	};	
 
 	let ships_remaining = board.ships_remaining(row_or_col);
-	return ships_remaining >= ship_size;
+	return ships_remaining >= ship_size - num_ship_squares;
 }
 
 // In the incrementing axis, need to have one ship remaining per square
@@ -64,7 +66,7 @@ fn enough_free_ships_on_incrementing_axis(board: &Board, ship_size: usize, coord
 		if let Some(coord) = board.layout.offset(coord, square_idx, incrementing_axis) {
 			let row_or_col = coord.row_or_col(incrementing_axis);
 			let ships_remaining = board.ships_remaining(row_or_col);
-			if ships_remaining < 1 {
+			if ships_remaining < 1 && !board[coord].is_ship() {
 				return false;
 			}
 		}
@@ -77,9 +79,19 @@ fn enough_free_ships_on_incrementing_axis(board: &Board, ship_size: usize, coord
 }
 
 // Will the ship fit on the board at the given coordinates?
-fn can_fit_ship_at_coord(board: &Board, ship_size: usize, coord: Coord, incrementing_axis: Axis) -> bool {
-	return board.test_ship_at_coord(ship_size, coord, incrementing_axis,
+//
+// Return:
+// bool - Will the ship fit?
+// usize - Number of ship squares already placed (only correct if bool is true)
+fn can_fit_ship_at_coord(board: &Board, ship_size: usize, coord: Coord, incrementing_axis: Axis) -> (bool, usize) {
+	let mut num_ship_squares = 0;
+
+	let fits = board.test_ship_at_coord(ship_size, coord, incrementing_axis,
 		|coord, square_idx| {
+			if board[coord].is_ship() {
+				num_ship_squares += 1;
+			}
+
 			let expeected = Ship::expected_square_for_ship(ship_size, square_idx, incrementing_axis);
 			let is_expected = 
 				board[coord] == Square::Unknown || 
@@ -88,6 +100,8 @@ fn can_fit_ship_at_coord(board: &Board, ship_size: usize, coord: Coord, incremen
 
 			is_expected
 		});
+
+	return (fits, num_ship_squares);
 }
 
 #[cfg(test)] 
@@ -99,13 +113,24 @@ mod test_only_place_it_can_go {
 	    let board = Board::new(vec![
 	        "  0000", // deliberate: Don't have enough ships on incrementing axis
 	        "3|    ",
+	        "0|    ",
+	        "2| *  ",
 	    ]);
+
+	    // Enough space - No existing ships
 	    let coord = Coord { row_num: 0, col_num: 0 };
-	    let result = enough_free_ships_on_constant_axis(&board, 3, coord, Axis::Row);
+	    let result = enough_free_ships_on_constant_axis(&board, 3, coord, Axis::Row, 0);
 	    assert_eq!(result, true);
 
-	    let result = enough_free_ships_on_constant_axis(&board, 4, coord, Axis::Row);
-	    assert_eq!(result, false);
+	    // Enough space - Includes an existing ships
+	    let coord = Coord { row_num: 2, col_num: 0 };
+	    let result = enough_free_ships_on_constant_axis(&board, 3, coord, Axis::Row, 1);
+	    assert_eq!(result, true);	 
+
+	    // Not enough space
+	    let coord = Coord { row_num: 0, col_num: 0 };
+	    let result = enough_free_ships_on_constant_axis(&board, 4, coord, Axis::Row, 0);
+	    assert_eq!(result, false);   
     }
 
     #[test]
@@ -114,12 +139,27 @@ mod test_only_place_it_can_go {
 	        "  1110", 
 	        "0|    ", // deliberate: Don't have enough ships on constant axis
 	    ]);
+
+	    // Enough space - No existing ships
 	    let coord = Coord { row_num: 0, col_num: 0 };
 	    let result = enough_free_ships_on_incrementing_axis(&board, 3, coord, Axis::Col);
 	    assert_eq!(result, true);
 
+	    // Not enough space
+	    let coord = Coord { row_num: 0, col_num: 0 };	    
 	    let result = enough_free_ships_on_incrementing_axis(&board, 4, coord, Axis::Col);
 	    assert_eq!(result, false);
+
+	    let board = Board::new(vec![
+	        "  1010", 
+	        "0| *  ", // deliberate: Don't have enough ships on constant axis
+	    ]);	  
+
+	    // Enough space - Includes an existing ship
+	    let coord = Coord { row_num: 0, col_num: 0 };
+	    let result = enough_free_ships_on_incrementing_axis(&board, 3, coord, Axis::Col);
+	    assert_eq!(result, true);	      
+
     }    
 
     #[test]
@@ -132,34 +172,37 @@ mod test_only_place_it_can_go {
 	        "0|~~~v",
 	    ]);    	
 
-	    // Can place it: All squares empty
+	    // Can place it: All squares empty (non-dot ship)
 	    let coord = Coord { row_num: 0, col_num: 0 };
-	    let can_place = can_fit_ship_at_coord(&board, 3, coord, Axis::Col);
+	    let (can_place, num_ship_squares) = can_fit_ship_at_coord(&board, 3, coord, Axis::Col);
 	    assert_eq!(can_place, true);
+	    assert_eq!(num_ship_squares, 0);
 
-	    // Can place it: Just a dot
+	    // Can place it: All squares empty (dot ship)
 	    let coord = Coord { row_num: 0, col_num: 2 };
-	    let can_place = can_fit_ship_at_coord(&board, 1, coord, Axis::Col);
-	    assert_eq!(can_place, true);	    
+	    let (can_place, num_ship_squares) = can_fit_ship_at_coord(&board, 1, coord, Axis::Col);
+	    assert_eq!(can_place, true);	
+	    assert_eq!(num_ship_squares, 0);    
 
 	    // Cannot place it: Not enough room
 	    let coord = Coord { row_num: 0, col_num: 0 };
-	    let can_place = can_fit_ship_at_coord(&board, 5, coord, Axis::Col);
+	    let (can_place, _) = can_fit_ship_at_coord(&board, 5, coord, Axis::Col);
 	    assert_eq!(can_place, false);
 
 	    // Cannot place it: Water in the way
 	    let coord = Coord { row_num: 1, col_num: 0 };
-	    let can_place = can_fit_ship_at_coord(&board, 3, coord, Axis::Col);
+	    let (can_place, _) = can_fit_ship_at_coord(&board, 3, coord, Axis::Col);
 	    assert_eq!(can_place, false);
 
 	    // Can place it: Existing ships have the correct type
 	    let coord = Coord { row_num: 1, col_num: 3 };
-	    let can_place = can_fit_ship_at_coord(&board, 3, coord, Axis::Row);
+	    let (can_place, num_ship_squares) = can_fit_ship_at_coord(&board, 3, coord, Axis::Row);
 	    assert_eq!(can_place, true);
+	    assert_eq!(num_ship_squares, 2);
 
 	    // Cannot place it: Existing ship has the wrong type
 	    let coord = Coord { row_num: 2, col_num: 0 };
-	    let can_place = can_fit_ship_at_coord(&board, 1, coord, Axis::Row);
+	    let (can_place, _) = can_fit_ship_at_coord(&board, 1, coord, Axis::Row);
 	    assert_eq!(can_place, false);		    
     }
 
@@ -202,9 +245,6 @@ mod test_only_place_it_can_go {
 	// TESTS:
 	// - We know where the middle of the ship will be but not the ends. Place Ship::Any in the ones that we
 	//   know will have a ship.
-	//
-	// TODO:
-	// - After set, board needs to decrement number of ships found
 
 	#[test]
 	fn it_fills_in_4sq() {
@@ -312,6 +352,30 @@ mod test_only_place_it_can_go {
 	        "0|~~~•~",
 	        "0|~•~~~",
 
+	    ]);
+	}
+
+	#[test]
+	fn it_completes_partial_ship() {
+	    do_test(vec![
+	    	"ships: 5sq x 1.",
+	        "  020",
+	        "1|~ ~",
+	        "0|~*~",
+	        "1|~ ~",
+	        "0|~*~",
+	        "0|~*~",	        
+	        "0|~ ~",
+	    ],
+	    vec![
+	    	"ships: 5sq x 0.",
+	        "  000",
+	        "0|~^~",
+	        "0|~|~",
+	        "0|~|~",
+	        "0|~|~",
+	        "0|~v~",	        
+	        "0|~ ~",	    
 	    ]);
 	}
 }

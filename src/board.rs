@@ -265,8 +265,8 @@ impl Board {
 
     // Calls a test function repeatedly, for every square in the ship (originating at coord).
     // Returns true if the test function returns true for every coordinate, and if the ship is in bounds.
-    pub fn test_ship_at_coord<T>(&self, ship_size: usize, coord: Coord, incrementing_axis: Axis, test : T) -> bool
-    where T: Fn(Coord, usize) ->bool {
+    pub fn test_ship_at_coord<T>(&self, ship_size: usize, coord: Coord, incrementing_axis: Axis, mut test : T) -> bool
+    where T: FnMut(Coord, usize) ->bool {
 
         for square_idx in 0..ship_size {
             if let Some(coord) = self.layout.offset(coord, square_idx, incrementing_axis) {
