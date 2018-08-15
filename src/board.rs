@@ -213,7 +213,7 @@ impl Board {
     // How many ships of a given size remain to be found
     pub fn ships_to_find_for_size(&self, ship_size: usize) -> usize {
         if let Some(&total) = self.ships_to_find.get(&ship_size) {
-            let found = self.count_ships(ship_size);
+            let found = self.count_found_ships(ship_size);
 
             return total - found;
         }
@@ -222,7 +222,29 @@ impl Board {
         }
     }
 
-    fn count_ships(&self, ship_size: usize) -> usize {
+    fn count_found_ships(&self, ship_size: usize) -> usize {
+        let mut ship_count = 0;
+
+        self.iterate_possible_ships(ship_size, |coord, incrementing_axis| {
+            if self.ship_exists_at_coord(ship_size, coord, incrementing_axis) {
+                ship_count = ship_count + 1;
+            }            
+        });
+
+        return ship_count;
+    }
+
+    fn ship_exists_at_coord(&self, ship_size: usize, coord: Coord, incrementing_axis: Axis) -> bool {
+        return self.test_ship_at_coord(ship_size, coord, incrementing_axis,
+            |coord, square_idx| {
+                let expected = Ship::expected_square_for_ship(ship_size, square_idx, incrementing_axis);
+                self[coord] == Square::Ship(expected)
+            });
+    }
+
+    // TODO: This should return an interator, but I'm not sure how to do that
+    pub fn iterate_possible_ships<F>(&self, ship_size: usize, mut callback : F)
+    where F: FnMut(Coord, Axis) {
         // When placing size = 1, we don't increment the coordinate so axis doesn't matter. But if we
         // search by both axes, every coord will match twice. So only search by one axis, and we only match
         // every candidate coordinate once.
@@ -233,28 +255,23 @@ impl Board {
             vec![Axis::Row, Axis::Col]
         };
 
-        let mut ship_count = 0;
         let layout = self.layout;
-
         for coord in layout.all_coordinates() {
             for incrementing_axis in axes.iter() {
-                let constant_axis = incrementing_axis.cross_axis();
-
-                if self.ship_exists_at_coord(ship_size, coord, *incrementing_axis) {
-                    ship_count = ship_count + 1;
-                }
+                callback(coord, *incrementing_axis);
             }
-        }    
-
-        return ship_count;
+        }   
     }
 
-    fn ship_exists_at_coord(&self, ship_size: usize, coord: Coord, incrementing_axis: Axis) -> bool {
+    // Calls a test function repeatedly, for every square in the ship (originating at coord).
+    // Returns true if the test function returns true for every coordinate, and if the ship is in bounds.
+    pub fn test_ship_at_coord<T>(&self, ship_size: usize, coord: Coord, incrementing_axis: Axis, test : T) -> bool
+    where T: Fn(Coord, usize) ->bool {
+
         for square_idx in 0..ship_size {
             if let Some(coord) = self.layout.offset(coord, square_idx, incrementing_axis) {
 
-                let expected = Ship::expected_square_for_ship(ship_size, square_idx, incrementing_axis);
-                if self[coord] != Square::Ship(expected) {
+                if test(coord, square_idx) == false {
                     return false;
                 }
             }
@@ -264,7 +281,7 @@ impl Board {
             }
         }
 
-        return true;        
+        return true; // all tests passed
     }
 }
 
@@ -535,16 +552,16 @@ mod test_find_ships {
             "0|     ",
         ]);
 
-        let count = board.count_ships(1);
+        let count = board.count_found_ships(1);
         assert_eq!(count, 1);
 
-        let count = board.count_ships(3);
+        let count = board.count_found_ships(3);
         assert_eq!(count, 0);    
         
-        let count = board.count_ships(4);
+        let count = board.count_found_ships(4);
         assert_eq!(count, 2);      
 
-        let count = board.count_ships(5);
+        let count = board.count_found_ships(5);
         assert_eq!(count, 0);              
     }
 }

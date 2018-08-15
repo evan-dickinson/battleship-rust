@@ -17,31 +17,18 @@ pub fn find_only_place_for_ships(board: &mut Board, changed : &mut bool) {
 }
 
 fn find_only_place_for_ship(board: &mut Board, ship_size: usize, num_ships: usize, changed: &mut bool) {
-	// When placing size = 1, we don't increment the coordinate so axis doesn't matter. But if we
-	// search by both axes, every coord will match twice. So only search by one axis, and we only match
-	// every candidate coordinate once.
-	let axes = if ship_size == 1 { 
-		vec![Axis::Row]
-	}
-	else {
-		vec![Axis::Row, Axis::Col]
-	};
-
 	let mut placements : Vec<(Coord, Axis)> = vec![];
-	let layout = board.layout;
 
-	for coord in layout.all_coordinates() {
-		for incrementing_axis in axes.iter() {
-			let constant_axis = incrementing_axis.cross_axis();
+	board.iterate_possible_ships(ship_size, |coord, incrementing_axis| {
+		let constant_axis = incrementing_axis.cross_axis();
 
-			if can_fit_ship_at_coord(board, ship_size, coord, *incrementing_axis) &&
-				enough_free_ships_on_constant_axis(board, ship_size, coord, constant_axis) &&
-				enough_free_ships_on_incrementing_axis(board, ship_size, coord, *incrementing_axis) {
+		if can_fit_ship_at_coord(board, ship_size, coord, incrementing_axis) &&
+			enough_free_ships_on_constant_axis(board, ship_size, coord, constant_axis) &&
+			enough_free_ships_on_incrementing_axis(board, ship_size, coord, incrementing_axis) {
 
-				placements.push((coord, *incrementing_axis));
-			}
+			placements.push((coord, incrementing_axis));
 		}
-	}
+	});
 
 	if placements.len() == num_ships {
 		for (coord, incrementing_axis) in placements {
@@ -50,7 +37,7 @@ fn find_only_place_for_ship(board: &mut Board, ship_size: usize, num_ships: usiz
 	}
 }
 
-// After can_place_ has returned true, actually place the ship
+// After determining we can place a ship here, place it.
 fn place_ship_at_coord(board: &mut Board, ship_size: usize, coord: Coord, incrementing_axis: Axis, changed: &mut bool) {
 	for square_idx in 0..ship_size {
 		let coord = board.layout.offset(coord, square_idx, incrementing_axis).unwrap();
@@ -89,29 +76,18 @@ fn enough_free_ships_on_incrementing_axis(board: &Board, ship_size: usize, coord
 	return true;
 }
 
-
 // Will the ship fit on the board at the given coordinates?
-fn can_fit_ship_at_coord(board: &Board, ship_size: usize, coord: Coord, axis: Axis) -> bool {
-	for square_idx in 0..ship_size {
-		if let Some(coord) = board.layout.offset(coord, square_idx, axis) {
-
-			let expeected = Ship::expected_square_for_ship(ship_size, square_idx, axis);
+fn can_fit_ship_at_coord(board: &Board, ship_size: usize, coord: Coord, incrementing_axis: Axis) -> bool {
+	return board.test_ship_at_coord(ship_size, coord, incrementing_axis,
+		|coord, square_idx| {
+			let expeected = Ship::expected_square_for_ship(ship_size, square_idx, incrementing_axis);
 			let is_expected = 
 				board[coord] == Square::Unknown || 
 				board[coord] == Square::Ship(Ship::Any) ||
 				board[coord] == Square::Ship(expeected);
 
-			if !is_expected {
-				return false;
-			}
-		}
-		else {
-			// Out of bounds
-			return false;
-		}
-	}
-
-	return true;
+			is_expected
+		});
 }
 
 #[cfg(test)] 
