@@ -54,7 +54,7 @@ fn find_only_place_for_ship(board: &mut Board, ship_size: usize, num_ships: usiz
 fn place_ship_at_coord(board: &mut Board, ship_size: usize, coord: Coord, incrementing_axis: Axis, changed: &mut bool) {
 	for square_idx in 0..ship_size {
 		let coord = board.layout.offset(coord, square_idx, incrementing_axis).unwrap();
-		let new_value = Square::Ship(expected_square_for_ship(ship_size, square_idx, incrementing_axis));
+		let new_value = Square::Ship(Ship::expected_square_for_ship(ship_size, square_idx, incrementing_axis));
 		board.set(coord, new_value, changed);
 	}
 }
@@ -95,7 +95,7 @@ fn can_fit_ship_at_coord(board: &Board, ship_size: usize, coord: Coord, axis: Ax
 	for square_idx in 0..ship_size {
 		if let Some(coord) = board.layout.offset(coord, square_idx, axis) {
 
-			let expeected = expected_square_for_ship(ship_size, square_idx, axis);
+			let expeected = Ship::expected_square_for_ship(ship_size, square_idx, axis);
 			let is_expected = 
 				board[coord] == Square::Unknown || 
 				board[coord] == Square::Ship(Ship::Any) ||
@@ -112,38 +112,6 @@ fn can_fit_ship_at_coord(board: &Board, ship_size: usize, coord: Coord, axis: Ax
 	}
 
 	return true;
-}
-
-// Return the nth square for a ship, along the given axis.
-// For example, a ship of size 3 on horizontal axis, we expect to see LeftEnd, then HorizontalMiddle, then RightEnd
-fn expected_square_for_ship(ship_size: usize, square_idx: usize, incrementing_axis: Axis) -> Ship {
-	assert!(square_idx < ship_size);
-
-	if ship_size == 1 {
-		return Ship::Dot;
-	}
-	else {
-		if square_idx == 0 {
-			return match incrementing_axis {
-				// If we're incrementing columns, need to start with a left end.
-				// If incrementing rows, need to start with a top end.
-				Axis::Col => Ship::LeftEnd,
-				Axis::Row => Ship::TopEnd,
-			}
-		}
-		else if square_idx == ship_size - 1 {
-			return match incrementing_axis {
-				Axis::Col => Ship::RightEnd,
-				Axis::Row => Ship::BottomEnd,
-			}			
-		}
-		else { // middle
-			return match incrementing_axis {
-				Axis::Col => Ship::HorizontalMiddle,
-				Axis::Row => Ship::VerticalMiddle,
-			}
-		}
-	}
 }
 
 #[cfg(test)] 
@@ -270,7 +238,7 @@ mod test_only_place_it_can_go {
 	        "4|~    ",
 	    ],
 	    vec![
-	    	"ships: 4sq x 1.", // TODO: Should be 4sq x 0
+	    	"ships: 4sq x 0.",
 	        "  00000",
 	        "0|~<-->",
 	    ]);
@@ -286,7 +254,7 @@ mod test_only_place_it_can_go {
 	        "4|~    ",
 	    ],
 	    vec![
-	    	"ships: 4sq x 2.", // TODO: Should be 4sq x 0
+	    	"ships: 4sq x 0.",
 	        "  00000",
 	        "0|~<-->",
 	        "0|~~~~~",
@@ -316,7 +284,7 @@ mod test_only_place_it_can_go {
 	        "2|~    ",
 	    ],
 	    vec![
-	    	"ships: 2sq x 1.", // TODO: Should be 4sq x 0
+	    	"ships: 2sq x 0.", 
 	        "  00000",
 	        "0|~ <> ", // These middle squares were the only ones with space on incrementing axis
 	    ]);
@@ -332,7 +300,7 @@ mod test_only_place_it_can_go {
 	        "2|   ",
 	    ],
 	    vec![
-	    	"ships: 3sq x 1.",
+	    	"ships: 3sq x 0.",
 	        "  000",
 	        "1| ^ ",
 	        "1| | ",
@@ -348,7 +316,7 @@ mod test_only_place_it_can_go {
 	        "1|~~~ ~",
 	    ],
 	    vec![
-	    	"ships: 1sq x 1.", // TODO: Should be 1sq x 0
+	    	"ships: 1sq x 0.",
 	        "  00000",
 	        "0|~~~•~",
 	    ]);
@@ -363,7 +331,7 @@ mod test_only_place_it_can_go {
 	        "1|~ ~~~",
 	    ],
 	    vec![
-	    	"ships: 1sq x 2.", // TODO: Should be 1sq x 0
+	    	"ships: 1sq x 0.",
 	        "  00000",
 	        "0|~~~•~",
 	        "0|~•~~~",

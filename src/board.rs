@@ -85,9 +85,9 @@ impl Board {
 
         let mut out = "ships: ".to_string();
         let ship_strings = self.ships_to_find.keys()
-            .map(|size| {
-                let count = self.ships_to_find.get(size).unwrap();
-                let msg = format!("{}sq x {}", size, count);
+            .map(|&ship_size| {
+                let count = self.ships_to_find_for_size(ship_size);
+                let msg = format!("{}sq x {}", ship_size, count);
                 msg.to_string()
             })
             .collect::<Vec<_>>();
@@ -211,11 +211,60 @@ impl Board {
     }
 
     // How many ships of a given size remain to be found
-    pub fn ships_to_find_for_size(&self, ship_size : usize) -> usize {
-        return match self.ships_to_find.get(&ship_size) {
-            Some(count) => *count,
-            None        => 0,
+    pub fn ships_to_find_for_size(&self, ship_size: usize) -> usize {
+        if let Some(&total) = self.ships_to_find.get(&ship_size) {
+            let found = self.count_ships(ship_size);
+
+            return total - found;
         }
+        else {
+            return 0;
+        }
+    }
+
+    fn count_ships(&self, ship_size: usize) -> usize {
+        // When placing size = 1, we don't increment the coordinate so axis doesn't matter. But if we
+        // search by both axes, every coord will match twice. So only search by one axis, and we only match
+        // every candidate coordinate once.
+        let axes = if ship_size == 1 { 
+            vec![Axis::Row]
+        }
+        else {
+            vec![Axis::Row, Axis::Col]
+        };
+
+        let mut ship_count = 0;
+        let layout = self.layout;
+
+        for coord in layout.all_coordinates() {
+            for incrementing_axis in axes.iter() {
+                let constant_axis = incrementing_axis.cross_axis();
+
+                if self.ship_exists_at_coord(ship_size, coord, *incrementing_axis) {
+                    ship_count = ship_count + 1;
+                }
+            }
+        }    
+
+        return ship_count;
+    }
+
+    fn ship_exists_at_coord(&self, ship_size: usize, coord: Coord, incrementing_axis: Axis) -> bool {
+        for square_idx in 0..ship_size {
+            if let Some(coord) = self.layout.offset(coord, square_idx, incrementing_axis) {
+
+                let expected = Ship::expected_square_for_ship(ship_size, square_idx, incrementing_axis);
+                if self[coord] != Square::Ship(expected) {
+                    return false;
+                }
+            }
+            else {
+                // Out of bounds
+                return false;
+            }
+        }
+
+        return true;        
     }
 }
 
@@ -422,3 +471,81 @@ mod test {
         assert_eq!(col_coords.next(), None);
     }
 }
+
+#[cfg(test)]
+mod test_find_ships {
+    use super::*;
+
+    #[test]
+    fn it_finds_ship() {
+        let board = Board::new(vec![
+            "  000",
+            "0|  ^",
+            "0| ~|",
+            "0|• |",
+            "0|  v",
+            "0|   ",
+            "0|<> ",
+        ]);    
+
+        // Find vertical ship
+        let coord = Coord { row_num: 0, col_num: 2 };
+        let found_ship = board.ship_exists_at_coord(
+            /* size */ 4, coord, Axis::Row
+            );
+        assert_eq!(found_ship, true);
+
+        // Find horizontal ship
+        let coord = Coord { row_num: 5, col_num: 0 };
+        let found_ship = board.ship_exists_at_coord(
+            /* size */ 2, coord, Axis::Col
+            );
+        assert_eq!(found_ship, true);        
+
+        // Finds dot
+        let coord = Coord { row_num: 2, col_num: 0 };
+        let found_ship = board.ship_exists_at_coord(
+            /* size */ 1, coord, Axis::Row
+            );
+        assert_eq!(found_ship, true);        
+
+        // Does not match when size < ship size
+        let coord = Coord { row_num: 0, col_num: 2 };
+        let found_ship = board.ship_exists_at_coord(
+            /* size */ 3, coord, Axis::Row
+            );
+        assert_eq!(found_ship, false);
+
+        // Does not match when size > ship size
+        let coord = Coord { row_num: 0, col_num: 2 };
+        let found_ship = board.ship_exists_at_coord(
+            /* size */ 5, coord, Axis::Row
+            );
+        assert_eq!(found_ship, false);                
+    }
+
+    #[test]
+    fn it_counts_ships() {
+        let board = Board::new(vec![
+            "  00000",
+            "0|  ^ ^",
+            "0| ~| |",
+            "0|• | |",
+            "0|  v v",
+            "0|     ",
+        ]);
+
+        let count = board.count_ships(1);
+        assert_eq!(count, 1);
+
+        let count = board.count_ships(3);
+        assert_eq!(count, 0);    
+        
+        let count = board.count_ships(4);
+        assert_eq!(count, 2);      
+
+        let count = board.count_ships(5);
+        assert_eq!(count, 0);              
+    }
+}
+
