@@ -85,6 +85,7 @@ fn enough_free_ships_on_incrementing_axis(board: &Board, ship_size: usize, coord
 // usize - Number of ship squares already placed (only correct if bool is true)
 fn can_fit_ship_at_coord(board: &Board, ship_size: usize, coord: Coord, incrementing_axis: Axis) -> (bool, usize) {
 	let mut num_ship_squares = 0;
+	let mut all_matches_exact = true;
 
 	let fits = board.test_ship_at_coord(ship_size, coord, incrementing_axis,
 		|coord, square_idx| {
@@ -93,19 +94,22 @@ fn can_fit_ship_at_coord(board: &Board, ship_size: usize, coord: Coord, incremen
 			}
 
 			let expected = Ship::expected_square_for_ship(ship_size, square_idx, incrementing_axis);
-			let is_expected = 
+			
+			let is_exact_match =  board[coord] == Square::Ship(expected);
+			let is_match = is_exact_match ||
 				board[coord] == Square::Unknown || 
 				board[coord] == Square::Ship(Ship::Any) ||
-				board[coord] == Square::Ship(expected) ||
 				(
 					board[coord] == Square::Ship(Ship::AnyMiddle) &&
 					(expected == Ship::VerticalMiddle || expected == Ship::HorizontalMiddle)
-				);
+				);				
 
-			is_expected
+			all_matches_exact = all_matches_exact && is_exact_match;
+
+			is_match
 		});
 
-	return (fits, num_ship_squares);
+	return (fits && !all_matches_exact, num_ship_squares);
 }
 
 #[cfg(test)] 
@@ -211,6 +215,19 @@ mod test_only_place_it_can_go {
     }
 
     #[test]
+    fn test_can_fit_ship_doesnt_count_completed_ships() {
+	    let board = Board::new(vec![
+	        "  1111",
+	        "1|<-->",
+	    ]);
+
+	    // Cannot place it: The entire ship is present
+	    let coord = Coord { row_num: 0, col_num: 0 };
+	    let (can_place, _) = can_fit_ship_at_coord(&board, 4, coord, Axis::Col);
+	    assert_eq!(can_place, false);
+    }
+
+    #[test]
     fn test_place_ship_at_coord() {
 	    let mut board = Board::new(vec![
 	        "  002",
@@ -243,7 +260,17 @@ mod test_only_place_it_can_go {
 
 	    let mut _changed = false;
 	    find_only_place_for_ships(&mut board, &mut _changed);
-	    assert_eq!(board.to_strings(), expected);        
+
+	    let board_strings = board.to_strings();
+
+	    assert_eq!(board_strings, expected);
+
+	    // assert_eq!(board_strings.len(), expected.len());
+
+	    // let text_lines = board_strings.iter().zip(expected.iter());
+	    // for (actual_line, expected_line) in text_lines {
+	    // 	assert_eq!(actual_line, expected_line);
+	    // }
 	}
 
 	// TESTS:

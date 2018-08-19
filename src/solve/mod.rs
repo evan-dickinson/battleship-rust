@@ -23,7 +23,6 @@ use self::surround_middles::*;
 
 // TODO: Checks to implement:
 // * Count ships (1 x size 3, 2 x size 2, etc.)
-// * Refine a generic middle to vert or horiz, when surrounded by water
 
 pub fn solve(board : &mut Board) {
     let solvers = [
