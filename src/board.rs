@@ -66,14 +66,11 @@ impl Board {
             .enumerate()
             .map(|(row_num, row)| {
                 let row_count = self.ships_remaining_for_row[row_num];
-                let row_head = format!("{}|", row_count);
+                let mut row_text = format!("{}|", row_count);
+                let squares = row.iter().map(Square::to_string);
+                row_text.extend(squares);
 
-                return row.iter()
-                    .map(Square::to_string)
-                    .fold(row_head, |mut acc, square_str| {
-                        acc.push_str(&square_str);
-                        return acc;
-                    })
+                row_text
             })
             .collect();
     }

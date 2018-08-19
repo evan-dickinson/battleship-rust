@@ -353,10 +353,8 @@ fn make_board(ships_to_find_vec: Option<Vec<ShipToFind>>,
 	let ships_to_find;
 	if let Some(vec) = ships_to_find_vec {
 		ships_to_find = vec.iter()
-			.fold(HashMap::new(), |mut acc, ship| {
-				acc.insert(ship.size, ship.count);
-				acc
-			});
+            .map(|ship| (ship.size, ship.count))
+            .collect::<HashMap<_, _>>();
 	}
 	else {
 		ships_to_find = HashMap::new();
