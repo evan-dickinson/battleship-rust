@@ -72,7 +72,29 @@ fn main() {
         "0|               ",
     ];    
 
-    let mut board = Board::new(_puzzle4);
+    // https://lukerissacher.com/battleships/PQhwIQIJJC-CEhAHAFMAI-AEAAcBFdAO-AAQABIAAAA-AI4AOQ
+    let _puzzle5 = vec![
+        "ships: 5sq x 1, 4sq x 2, 3sq x 3, ",
+        "       2sq x 4, 1sq x 4.",    
+        "  150405131033020",
+        "2|         •     ",
+        "3|               ",
+        "5|               ",
+        "4|               ",
+        "0|     v         ",
+        "3|   ~           ",
+        "1|               ",
+        "0|          ☐    ",
+        "4|        >      ",
+        "0|   ☐           ",
+        "1|               ",
+        "2|               ",
+        "0|               ",
+        "1|             ^ ",
+        "1|          v    ",
+    ];
+
+    let mut board = Board::new(_puzzle5);
 
     solve(&mut board);
 
