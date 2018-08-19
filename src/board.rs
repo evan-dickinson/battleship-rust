@@ -81,7 +81,12 @@ impl Board {
         }
 
         let mut out = "ships: ".to_string();
-        let ship_strings = self.ships_to_find.keys()
+
+        let mut ship_sizes = self.ships_to_find.keys().cloned().collect::<Vec<_>>();
+        ship_sizes.sort();
+        ship_sizes.reverse();
+
+        let ship_strings = ship_sizes.iter()
             .map(|&ship_size| {
                 let count = self.ships_to_find_for_size(ship_size);
                 let msg = format!("{}sq x {}", ship_size, count);
