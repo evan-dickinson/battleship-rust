@@ -29,7 +29,6 @@ fn is_ship<'a>(board: &'a Board, index: Coord, neighbors: impl IntoIterator<Item
     		return false;
     	}
     });
-
 }
 
 pub fn specify_ships(board: &mut Board, changed: &mut bool) {

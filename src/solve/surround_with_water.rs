@@ -8,18 +8,18 @@ use neighbor::*;
 
 pub fn surround_ships_with_water(board: &mut Board, changed: &mut bool) {
     let layout = board.layout;
-    let ship_coords = {
-        layout.all_coordinates()
-            .filter(|coord| { board[*coord].is_ship() })
-            .collect::<Vec<_>>()
-    };
+    let coords_and_types = layout.all_coordinates()
+        .filter_map(|coord| { 
+            if let Square::Ship(ship_type) = board[coord] {
+                Some( (coord, ship_type) )
+            }
+            else {
+                None
+            }
+        })
+        .collect::<Vec<_>>();
 
-    for coord in ship_coords {
-        let ship_type = match board[coord] {
-            Square::Ship(ship_type) => ship_type,
-            _ => panic!("Unexpected"),
-        };
-
+    for (coord, ship_type) in coords_and_types {
         let neighbors = Neighbor::surrounding_neighbors(ship_type);
 
         let mut neighbor_coords = layout.coords_for_neighbors(coord, neighbors.iter());

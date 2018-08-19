@@ -4,29 +4,25 @@ use neighbor::*;
 
 pub fn place_ships_next_to_ends(board: &mut Board, changed: &mut bool) {
     let layout = board.layout;
-    let ship_coords = {
-        layout.all_coordinates()
-            .filter(|coord| { board[*coord].is_ship() })
-            .collect::<Vec<_>>()
-    };
+    let ship_coords = layout.all_coordinates()
+        .filter(|coord| { board[*coord].is_ship() })
+        .collect::<Vec<_>>();
+
     for coord in ship_coords {
         let neighbor = match board[coord] {
-            Square::Ship(Ship::TopEnd) => Some(Neighbor::S),
-            Square::Ship(Ship::BottomEnd) => Some(Neighbor::N),
-            Square::Ship(Ship::LeftEnd) => Some(Neighbor::E),
-            Square::Ship(Ship::RightEnd) => Some(Neighbor::W),
-            _ => None,
+            Square::Ship(Ship::TopEnd)    => Neighbor::S,
+            Square::Ship(Ship::BottomEnd) => Neighbor::N,
+            Square::Ship(Ship::LeftEnd)   => Neighbor::E,
+            Square::Ship(Ship::RightEnd)  => Neighbor::W,
+            _                             => continue,
         };
 
-        if let Some(neighbor) = neighbor {
-            if let Some(neighbor_coord) = 
-                layout.coord_for_neighbor(coord, neighbor)  {
-
-
-                if board[neighbor_coord] == Square::Unknown {
-                	board.set(neighbor_coord, Square::Ship(Ship::Any), changed);
-                }
-            }
+        // Panic if neighbor is out of bounds. That would mean, for example, that there's the
+        // top end of a ship on the last row of the board. There would be no place for the rest
+        // of the ship to go.
+        let neighbor_coord = layout.coord_for_neighbor(coord, neighbor).unwrap();
+        if board[neighbor_coord] == Square::Unknown {
+        	board.set(neighbor_coord, Square::Ship(Ship::Any), changed);
         }
     }        
 }
@@ -56,6 +52,20 @@ mod test {
 	        "0|  ^  ",
 	        "0|  *  ",    
 	    ]);
+	}
+
+	#[test]
+	#[should_panic]
+	fn it_panics_if_no_place_for_a_ship() {
+	    let before = vec![
+	        "  00100",
+	        "1|  v  ",
+	    ];
+
+		let mut board = Board::new(before);
+
+	    let mut _changed = false;
+	    place_ships_next_to_ends(&mut board, &mut _changed);
 	}
 
 	#[test]
