@@ -26,7 +26,7 @@ impl Neighbor {
     fn all_except(exclude : Neighbor) -> HashSet<Neighbor> {
         return Neighbor::all_neighbors().iter()
             .filter(|&x| *x != exclude)
-            .map(|x| *x)
+            .cloned()
             .collect::<HashSet<Neighbor>>();
     }
 

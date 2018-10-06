@@ -35,12 +35,12 @@ impl Ship {
     pub fn expected_square_for_ship(ship_size: usize, square_idx: usize, incrementing_axis: Axis) -> Ship {
         assert!(square_idx < ship_size);
 
-        if ship_size == 1 {
-            return Ship::Dot;
+        return if ship_size == 1 {
+            Ship::Dot
         }
         else {
             if square_idx == 0 {
-                return match incrementing_axis {
+                match incrementing_axis {
                     // If we're incrementing columns, need to start with a left end.
                     // If incrementing rows, need to start with a top end.
                     Axis::Col => Ship::LeftEnd,
@@ -48,13 +48,13 @@ impl Ship {
                 }
             }
             else if square_idx == ship_size - 1 {
-                return match incrementing_axis {
+                match incrementing_axis {
                     Axis::Col => Ship::RightEnd,
                     Axis::Row => Ship::BottomEnd,
                 }           
             }
             else { // middle
-                return match incrementing_axis {
+                match incrementing_axis {
                     Axis::Col => Ship::HorizontalMiddle,
                     Axis::Row => Ship::VerticalMiddle,
                 }

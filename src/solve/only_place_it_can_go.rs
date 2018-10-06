@@ -59,19 +59,7 @@ fn find_only_place_for_ship(board: &mut Board, ship_size: usize, num_ships: usiz
 			all_coords_in_this_placement
 		});
 
-		if let Some(coords_for_first_placement) = coordinates_for_all_placements.next() {
-			// Find the intersection of all the hash sets
-			let common_coordinates = coordinates_for_all_placements.fold(coords_for_first_placement, |acc, coords_for_placement| {
-				acc.intersection(&coords_for_placement).cloned().collect::<HashSet<_>>()
-			});
-
-			// Set coordinates in the intersection
-			for coord in common_coordinates {
-				if board[coord] == Square::Unknown {
-					board.set(coord, Square::Ship(Ship::Any), changed);
-				}
-			}
-		}
+		place_ship_at_intersection_of_coords(board, &mut coordinates_for_all_placements, num_ships, changed);
 	}
 }
 
@@ -82,6 +70,24 @@ fn place_ship_at_coord(board: &mut Board, ship_size: usize, coord: Coord, increm
 		let new_value = Square::Ship(Ship::expected_square_for_ship(ship_size, square_idx, incrementing_axis));
 		board.set(coord, new_value, changed);
 	}
+}
+
+fn place_ship_at_intersection_of_coords(board: &mut Board, coordinates_for_all_placements: &mut impl Iterator<Item = HashSet<Coord>>, 
+	num_ships: usize, changed: &mut bool) {
+
+	if let Some(coords_for_first_placement) = coordinates_for_all_placements.next() {
+		// Find the intersection of all the hash sets
+		let common_coordinates = coordinates_for_all_placements.fold(coords_for_first_placement, |acc, coords_for_placement| {
+			acc.intersection(&coords_for_placement).cloned().collect::<HashSet<_>>()
+		});
+
+		// Set coordinates in the intersection
+		for coord in common_coordinates {
+			if board[coord] == Square::Unknown {
+				board.set(coord, Square::Ship(Ship::Any), changed);
+			}
+		}
+	}	
 }
 
 // constant axis: The one that remains the same as we increment through coordinats
@@ -481,5 +487,35 @@ mod test_only_place_it_can_go {
 	    	"0|   ",
 	    ]);
 	}		
+
+	#[test]
+	fn it_places_partial_ship_when_one_possibility() {
+	    do_test(vec![
+	    	"ships: 5sq x 1.",
+	    	"  1111111",
+	    	"7|       ",
+	    ],
+	    vec![
+	    	"ships: 5sq x 1.",
+	    	"  1100011",
+	    	"4|  ***  ",
+	    ]);		
+	}
+
+	#[test]
+	fn it_doesnt_place_partial_ship_when_two_possibilities() {
+	    do_test(vec![
+	    	"ships: 5sq x 1.",
+	    	"  1111111",
+	    	"7|       ",
+	    	"7|       ",
+	    ],
+	    vec![
+	    	"ships: 5sq x 1.",
+	    	"  1111111",
+	    	"7|       ",
+	    	"7|       ",
+	    ]);		
+	}	
 }
 
