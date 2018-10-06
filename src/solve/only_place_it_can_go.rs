@@ -6,6 +6,8 @@ use square::*;
 use board::*;
 use layout::*;
 
+use std::collections::HashSet;
+
 pub fn find_only_place_for_ships(board: &mut Board, changed : &mut bool) {
 	let sizes = board.remaining_ship_sizes().collect::<Vec<_>>();
 
@@ -33,8 +35,42 @@ fn find_only_place_for_ship(board: &mut Board, ship_size: usize, num_ships: usiz
 	});
 
 	if placements.len() == num_ships {
+		// We know the placement of every square in the ships. Fill in the complete ships.
+
 		for (coord, incrementing_axis) in placements {
 			place_ship_at_coord(board, ship_size, coord, incrementing_axis, changed);
+		}
+	}
+	// TODO: Handle cases where there are multiple ships remaining, each with a fuzzy place
+	else if num_ships == 1 {
+		// We can't fill in *all* the squares of the ships, but perhaps we can fill in *some*.
+		// Example: We need to fill a ship of size 4 and there are 5 possible squares. We know
+		// the middle 3 squares will be ships, even if we don't know which square will hold the 4th
+		// ship.
+
+		let layout = board.layout;
+
+		// For each placement, create a HashSet of coordinates in that placement
+		let mut coordinates_for_all_placements = placements.iter().map(|(coord, incrementing_axis)| {
+			let all_coords_in_this_placement = (0..ship_size).map(|square_idx| {
+				layout.offset(*coord, square_idx, *incrementing_axis).unwrap()
+			}).collect::<HashSet<_>>();
+
+			all_coords_in_this_placement
+		});
+
+		if let Some(coords_for_first_placement) = coordinates_for_all_placements.next() {
+			// Find the intersection of all the hash sets
+			let common_coordinates = coordinates_for_all_placements.fold(coords_for_first_placement, |acc, coords_for_placement| {
+				acc.intersection(&coords_for_placement).cloned().collect::<HashSet<_>>()
+			});
+
+			// Set coordinates in the intersection
+			for coord in common_coordinates {
+				if board[coord] == Square::Unknown {
+					board.set(coord, Square::Ship(Ship::Any), changed);
+				}
+			}
 		}
 	}
 }

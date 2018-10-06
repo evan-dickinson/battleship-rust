@@ -94,7 +94,20 @@ fn main() {
         "1|          v    ",
     ];
 
-    let mut board = Board::new(_puzzle5);
+    let _puzzle6 = vec![
+        "ships: 4sq x 1, 3sq x 1, ",
+        "       2sq x 2, 1sq x 3.",
+        "  3141401",
+        "2|  ~    ",
+        "1|       ",
+        "4|       ",
+        "0|       ",
+        "1|       ",
+        "3|       ",
+        "3|       ",
+    ];
+
+    let mut board = Board::new(_puzzle6);
 
     solve(&mut board);
 
