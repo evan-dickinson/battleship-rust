@@ -73,7 +73,7 @@ fn place_ship_at_coord(board: &mut Board, ship_size: usize, coord: Coord, increm
 }
 
 fn place_ship_at_intersection_of_coords(board: &mut Board, coordinates_for_all_placements: &mut impl Iterator<Item = HashSet<Coord>>, 
-	num_ships: usize, changed: &mut bool) {
+	_num_ships: usize, changed: &mut bool) {
 
 	if let Some(coords_for_first_placement) = coordinates_for_all_placements.next() {
 		// Find the intersection of all the hash sets
