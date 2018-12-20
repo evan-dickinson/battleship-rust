@@ -2,6 +2,7 @@
 name = "communicator"
 version = "0.1.0"
 authors = ["Evan Dickinson <me@evand.name>"]
+edition = "2018"
 
 [dependencies]
 nom = "^4.0"

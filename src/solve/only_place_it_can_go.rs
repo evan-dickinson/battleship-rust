@@ -2,9 +2,9 @@
 //
 // Solutions for the "only place it can go" rule
 
-use square::*;
-use board::*;
-use layout::*;
+use crate::square::*;
+use crate::board::*;
+use crate::layout::*;
 
 use std::collections::HashSet;
 use std::hash::Hash;

@@ -2,9 +2,9 @@ use std::ops::Index;
 use std::collections::HashMap;
 
 
-use square::*;
-use layout::*;
-use parse::*;
+use crate::square::*;
+use crate::layout::*;
+use crate::parse::*;
 
 pub struct Board {
     ships_to_find: HashMap<usize, usize>, // ship size => count of ships remaining
@@ -306,7 +306,7 @@ impl Index<Coord> for Board {
     }
 }
 
-#[cfg(test)] use test_utils::*;
+#[cfg(test)] use crate::test_utils::*;
 
 #[cfg(test)]
 mod test {

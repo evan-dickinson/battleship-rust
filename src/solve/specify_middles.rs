@@ -1,6 +1,6 @@
-use square::*;
-use board::*;
-use neighbor::*;
+use crate::square::*;
+use crate::board::*;
+use crate::neighbor::*;
 
 // Convert an AnyMiddle to a specific type of middle
 pub fn specify_middle(board: &mut Board, changed: &mut bool) {

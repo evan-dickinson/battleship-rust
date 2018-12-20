@@ -1,5 +1,5 @@
 #[cfg(test)]
-use board::*;
+use crate::board::*;
 
 #[cfg(test)]
 pub fn make_test_board() -> Board {

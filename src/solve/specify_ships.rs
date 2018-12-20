@@ -2,10 +2,10 @@
 //
 // Convert "any" ships to specific ships
 
-use square::*;
-use board::*;
-use neighbor::*;
-use layout::*;
+use crate::square::*;
+use crate::board::*;
+use crate::neighbor::*;
+use crate::layout::*;
 
 // Return true if all neighbors are either water or they are out of bounds
 fn is_water_or_out_of_bounds<'a>(board: &'a Board, index: Coord, neighbors: impl IntoIterator<Item = &'a Neighbor> + 'a) -> bool {

@@ -2,9 +2,9 @@
 //
 // Solutions that surround ships
 
-use square::*;
-use board::*;
-use neighbor::*;
+use crate::square::*;
+use crate::board::*;
+use crate::neighbor::*;
 
 pub fn surround_ships_with_water(board: &mut Board, changed: &mut bool) {
     let layout = board.layout;

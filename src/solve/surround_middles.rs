@@ -3,9 +3,9 @@
 // - Write tests
 // - Integrate into solve()
 
-use square::*;
-use board::*;
-use neighbor::*;
+use crate::square::*;
+use crate::board::*;
+use crate::neighbor::*;
 
 // Add ships before/after a middle
 pub fn surround_middle_with_ships(board: &mut Board, changed: &mut bool) {

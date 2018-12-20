@@ -1,4 +1,4 @@
-use board::*;
+use crate::board::*;
 
 mod fill_unknown;
 use self::fill_unknown::*;

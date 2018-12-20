@@ -1,6 +1,6 @@
 use std::fmt;
 
-use neighbor::*;
+use crate::neighbor::*;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub struct Coord {
@@ -196,7 +196,7 @@ impl Layout {
     }    
 }
 
-#[cfg(test)] use test_utils::*;
+#[cfg(test)] use crate::test_utils::*;
 
 #[cfg(test)]
 mod layout_tests {

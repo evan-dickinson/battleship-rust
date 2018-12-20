@@ -1,6 +1,6 @@
 use std::fmt;
 
-use layout::*;
+use crate::layout::*;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Ship {

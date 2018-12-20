@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 
-use square::*;
-use board::*;
+use crate::square::*;
+use crate::board::*;
+
+use nom::*;
 
 use std;
 
@@ -396,7 +398,7 @@ pub fn parse_board(text: &str) -> Board {
 #[cfg(test)]
 mod board_tests {
     use super::*;
-    use layout::*;
+    use crate::layout::*;
 
     #[test]
     fn it_parses_board_no_ships_to_find() {

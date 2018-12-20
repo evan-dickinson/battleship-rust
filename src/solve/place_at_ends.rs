@@ -1,6 +1,6 @@
-use square::*;
-use board::*;
-use neighbor::*;
+use crate::square::*;
+use crate::board::*;
+use crate::neighbor::*;
 
 pub fn place_ships_next_to_ends(board: &mut Board, changed: &mut bool) {
     let layout = board.layout;

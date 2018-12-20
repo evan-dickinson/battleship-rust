@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use square::*;
+use crate::square::*;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum Neighbor {

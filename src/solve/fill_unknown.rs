@@ -2,8 +2,8 @@
 //
 // Solutions that fill unknown squares
 
-use square::*;
-use board::*;
+use crate::square::*;
+use crate::board::*;
 
 pub fn fill_with_water(board: &mut Board, changed : &mut bool) {
     for row_or_col in board.layout.rows_and_cols() {
