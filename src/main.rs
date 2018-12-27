@@ -107,7 +107,7 @@ fn main() {
         "3|       ",
     ];
 
-    let mut board = Board::new(_puzzle6);
+    let mut board = Board::new(&_puzzle6);
 
     solve(&mut board);
 

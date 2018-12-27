@@ -1,4 +1,5 @@
 #![allow(clippy::needless_return)]
+#![allow(clippy::double_comparisons)] // parse! macros trigger this
 
 use std::collections::HashMap;
 

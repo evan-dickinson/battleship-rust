@@ -29,7 +29,7 @@ pub fn fill_with_ships(board: &mut Board, changed: &mut bool) {
 
 #[test]
 fn it_fills_with_ships() {
-    let mut board = Board::new(vec![
+    let mut board = Board::new(&vec![
         "  0110",
         "2|    ", // don't change, unknown != ships remaining
         "2|~  ~", // do change, unknown == ships remaining
@@ -54,7 +54,7 @@ mod test {
 
 	#[test]
 	fn it_fills_with_water() {
-	    let mut board = Board::new(vec![
+	    let mut board = Board::new(&vec![
 	        "  0011",
 	        "0|~*  ",
 	        "2|~*  ",

@@ -32,7 +32,7 @@ mod test {
 	use super::*;
 
 	fn do_test(before: Vec<&str>, after: Vec<&str>) {
-		let mut board = Board::new(before);
+		let mut board = Board::new(&before);
 		let expected = after.iter().map(|x| x.to_string()).collect::<Vec<_>>();
 
 	    let mut _changed = false;
@@ -62,7 +62,7 @@ mod test {
 	        "1|  v  ",
 	    ];
 
-		let mut board = Board::new(before);
+		let mut board = Board::new(&before);
 
 	    let mut _changed = false;
 	    place_ships_next_to_ends(&mut board, &mut _changed);

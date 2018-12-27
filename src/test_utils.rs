@@ -9,5 +9,5 @@ pub fn make_test_board() -> Board {
         "2|  *~",
     ];
 
-    return Board::new(text);
+    return Board::new(&text);
 }

@@ -55,11 +55,10 @@ fn find_only_place_for_ship(board: &mut Board, ship_size: usize, num_ships: usiz
 
         // For each placement, create a HashSet of coordinates in that placement
         let coordinates_for_all_placements = placements.iter().map(|(coord, incrementing_axis)| {
-            let all_coords_in_this_placement = (0..ship_size).map(|square_idx| {
+            // Collect coordinates for the current placement
+            (0..ship_size).map(|square_idx| {
                 layout.offset(*coord, square_idx, *incrementing_axis).unwrap()
-            }).collect::<HashSet<_>>();
-
-            all_coords_in_this_placement
+            }).collect::<HashSet<_>>()
         }).collect::<Vec<_>>();
 
         let partitioned_coordinates = partition(coordinates_for_all_placements);
@@ -82,7 +81,7 @@ fn place_ship_at_coord(board: &mut Board, ship_size: usize, coord: Coord, increm
 fn place_ship_at_intersection_of_coords(board: &mut Board, coordinates_for_all_placements: &mut impl Iterator<Item = HashSet<Coord>>, 
     changed: &mut bool) {
 
-    while let Some(coords) = coordinates_for_all_placements.next() {
+    for coords in coordinates_for_all_placements {
         // Set coordinates in the intersection
         for coord in coords {
             if board[coord] == Square::Unknown {
@@ -308,7 +307,7 @@ mod test_only_place_it_can_go {
 
     #[test]
     fn test_enough_free_ships_on_constant_axis() {
-        let board = Board::new(vec![
+        let board = Board::new(&vec![
             "  0000", // deliberate: Don't have enough ships on incrementing axis
             "3|    ",
             "0|    ",
@@ -333,7 +332,7 @@ mod test_only_place_it_can_go {
 
     #[test]
     fn test_enough_free_ships_on_incrementing_axis() {
-        let board = Board::new(vec![
+        let board = Board::new(&vec![
             "  1110", 
             "0|    ", // deliberate: Don't have enough ships on constant axis
         ]);
@@ -348,7 +347,7 @@ mod test_only_place_it_can_go {
         let result = enough_free_ships_on_incrementing_axis(&board, 4, coord, Axis::Col);
         assert_eq!(result, false);
 
-        let board = Board::new(vec![
+        let board = Board::new(&vec![
             "  1010", 
             "0| *  ", // deliberate: Don't have enough ships on constant axis
         ]);   
@@ -362,7 +361,7 @@ mod test_only_place_it_can_go {
 
     #[test]
     fn test_can_fit_ship_at_coord() {
-        let board = Board::new(vec![
+        let board = Board::new(&vec![
             "  0000",
             "0|    ",
             "0|~ ~ ",
@@ -406,7 +405,7 @@ mod test_only_place_it_can_go {
 
     #[test]
     fn test_can_fit_ship_doesnt_count_completed_ships() {
-        let board = Board::new(vec![
+        let board = Board::new(&vec![
             "  1111",
             "1|<-->",
         ]);
@@ -419,7 +418,7 @@ mod test_only_place_it_can_go {
 
     #[test]
     fn test_place_ship_at_coord() {
-        let mut board = Board::new(vec![
+        let mut board = Board::new(&vec![
             "  002",
             "1|   ",
             "1| ~ ",
@@ -445,7 +444,7 @@ mod test_only_place_it_can_go {
     }
 
     fn do_test(before: Vec<&str>, after: Vec<&str>) {
-        let mut board = Board::new(before);
+        let mut board = Board::new(&before);
         let expected = after.iter().map(|x| x.to_string()).collect::<Vec<_>>();
 
         let mut _changed = false;

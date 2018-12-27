@@ -30,7 +30,7 @@ pub fn surround_ships_with_water(board: &mut Board, changed: &mut bool) {
 
 #[test]
 fn it_fills_diagonals() {
-    let mut board = Board::new(vec![
+    let mut board = Board::new(&vec![
         "  00000",
         "0|     ",
         "0|     ",
@@ -54,7 +54,7 @@ fn it_fills_diagonals() {
 
 #[test]
 fn it_surrounds_dots() {
-    let mut board = Board::new(vec![
+    let mut board = Board::new(&vec![
         "  00000",
         "0|     ",
         "0|  •  ",
@@ -74,7 +74,7 @@ fn it_surrounds_dots() {
 
 #[test]
 fn it_surrounds_middles() {
-    let mut board = Board::new(vec![
+    let mut board = Board::new(&vec![
         "  00000",
         "0|     ",
         "0|  -  ",
@@ -94,7 +94,7 @@ fn it_surrounds_middles() {
 
 #[test]
 fn it_surrounds_ends() {
-    let mut board = Board::new(vec![
+    let mut board = Board::new(&vec![
         "  00000",
         "0|     ",
         "0|  ^  ",

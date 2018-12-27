@@ -20,7 +20,7 @@ impl Board {
     //
     // Board creation
 
-    pub fn new(text_lines : Vec<&str>) -> Self {
+    pub fn new(text_lines : &[&str]) -> Self {        
         let mut text = text_lines.join("\n");
         text.push_str("\n.");
 
@@ -315,7 +315,7 @@ mod test {
 
 	#[test]
 	fn it_sets_changed() {
-	    let mut board = Board::new(vec![
+	    let mut board = Board::new(&vec![
 	        "  001",
 	        "0|   ",
 	        "1|~  ",
@@ -454,7 +454,7 @@ mod test {
 
     #[test]
     fn it_accesses_col_contents() {
-        let board = Board::new(vec![
+        let board = Board::new(&vec![
             "  000",
             "0| ^ ",
             "0| | ",
@@ -509,7 +509,7 @@ mod test_find_ships {
 
     #[test]
     fn it_finds_ship() {
-        let board = Board::new(vec![
+        let board = Board::new(&vec![
             "  000",
             "0|  ^",
             "0| ~|",
@@ -557,7 +557,7 @@ mod test_find_ships {
 
     #[test]
     fn it_counts_ships() {
-        let board = Board::new(vec![
+        let board = Board::new(&vec![
             "  00000",
             "0|  ^ ^",
             "0| ~| |",

@@ -32,6 +32,7 @@ impl Ship {
 
     // Return the nth square for a ship, along the given axis.
     // For example, a ship of size 3 on horizontal axis, we expect to see LeftEnd, then HorizontalMiddle, then RightEnd
+    #[allow(clippy::collapsible_if)]
     pub fn expected_square_for_ship(ship_size: usize, square_idx: usize, incrementing_axis: Axis) -> Ship {
         assert!(square_idx < ship_size);
 
