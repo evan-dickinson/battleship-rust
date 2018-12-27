@@ -1,3 +1,5 @@
+#![allow(clippy::needless_return)]
+
 use std::fmt;
 
 use crate::neighbor::*;
@@ -11,14 +13,14 @@ pub struct Coord {
 impl Coord {
     // Return the row or col of this coord, whichever is specified by the axis
     pub fn row_or_col(&self, axis : Axis) -> RowOrCol {
-        return RowOrCol { axis, index: self.index_for_axis(axis) };
+        RowOrCol { axis, index: self.index_for_axis(axis) }
     }
 
     pub fn index_for_axis(&self, axis : Axis) -> usize {
-        return match axis {
+        match axis {
             Axis::Row => self.row_num,
             Axis::Col => self.col_num,
-        };
+        }
     }
 }
 
@@ -29,8 +31,8 @@ pub enum Axis {
 }
 
 impl Axis {
-    pub fn cross_axis(&self) -> Self {
-        return match self {
+    pub fn cross_axis(self) -> Self {
+        match self {
             Axis::Row => Axis::Col,
             Axis::Col => Axis::Row,
         }
@@ -44,7 +46,7 @@ impl fmt::Display for Axis {
             Axis::Col => "Col",
         };
 
-        return write!(f, "{}", label);
+        write!(f, "{}", label)
     }
 }
 
@@ -56,7 +58,7 @@ pub struct RowOrCol {
 
 impl fmt::Display for RowOrCol {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        return write!(f, "{}: {}", self.axis, self.index);
+        write!(f, "{}: {}", self.axis, self.index)
     }
 }
 

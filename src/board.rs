@@ -1,6 +1,7 @@
+#![allow(clippy::needless_return)]
+
 use std::ops::Index;
 use std::collections::HashMap;
-
 
 use crate::square::*;
 use crate::layout::*;
@@ -76,7 +77,7 @@ impl Board {
     }
 
     fn format_ships_to_find(&self) -> Option<String> {
-        if self.ships_to_find.len() == 0 {
+        if self.ships_to_find.is_empty() {
             return None;
         }
 
@@ -240,7 +241,7 @@ impl Board {
 
         self.iterate_possible_ships(ship_size, |coord, incrementing_axis| {
             if self.ship_exists_at_coord(ship_size, coord, incrementing_axis) {
-                ship_count = ship_count + 1;
+                ship_count += 1;
             }            
         });
 
@@ -284,7 +285,7 @@ impl Board {
         for square_idx in 0..ship_size {
             if let Some(coord) = self.layout.offset(coord, square_idx, incrementing_axis) {
 
-                if test(coord, square_idx) == false {
+                if !test(coord, square_idx) {
                     return false;
                 }
             }

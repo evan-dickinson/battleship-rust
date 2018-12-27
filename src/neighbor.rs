@@ -20,18 +20,18 @@ impl Neighbor {
             Neighbor::NW,
         ];
 
-        return all_neighbors.iter().cloned().collect::<HashSet<Neighbor>>();
+        all_neighbors.iter().cloned().collect::<HashSet<Neighbor>>()
     }
 
     fn all_except(exclude : Neighbor) -> HashSet<Neighbor> {
-        return Neighbor::all_neighbors().iter()
+        Neighbor::all_neighbors().iter()
             .filter(|&x| *x != exclude)
             .cloned()
-            .collect::<HashSet<Neighbor>>();
+            .collect::<HashSet<Neighbor>>()
     }
 
     pub fn surrounding_neighbors(ship_type: Ship) -> HashSet<Neighbor> {
-        return match ship_type {
+        match ship_type {
             Ship::Any       => vec![
                 Neighbor::NW, Neighbor::NE,
                 Neighbor::SW, Neighbor::SE,
@@ -56,7 +56,7 @@ impl Neighbor {
                 Neighbor::NW, Neighbor::NE,
                 Neighbor::SW, Neighbor::SE,
             ].iter().cloned().collect(),
-        };
+        }
     }
 
 }

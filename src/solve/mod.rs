@@ -51,7 +51,7 @@ pub fn solve(board : &mut Board) {
         }
 
         // If none of the solvers made a change, it's time to stop
-        if changed_in_loop == false {
+        if !changed_in_loop {
             break;
         }
     }

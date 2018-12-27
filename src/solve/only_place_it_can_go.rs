@@ -99,9 +99,9 @@ fn enough_free_ships_on_constant_axis(board: &Board, ship_size: usize, coord: Co
         axis:  constant_axis,
         index: coord.index_for_axis(constant_axis),
     };  
-
     let ships_remaining = board.ships_remaining(row_or_col);
-    return ships_remaining >= ship_size - num_ship_squares;
+
+    ships_remaining >= ship_size - num_ship_squares
 }
 
 // In the incrementing axis, need to have one ship remaining per square
@@ -119,7 +119,7 @@ fn enough_free_ships_on_incrementing_axis(board: &Board, ship_size: usize, coord
         }
     }
 
-    return true;
+    true
 }
 
 // Will the ship fit on the board at the given coordinates?
@@ -153,7 +153,7 @@ fn can_fit_ship_at_coord(board: &Board, ship_size: usize, coord: Coord, incremen
             is_match
         });
 
-    return (fits && !all_matches_exact, num_ship_squares);
+    (fits && !all_matches_exact, num_ship_squares)
 }
 
 
@@ -180,18 +180,18 @@ fn partition<T : Eq + Hash + Clone>(unpartitioned: Vec<HashSet<T>>) -> Vec<HashS
         unpartitioned_iter = other_sets.into_iter();
     }
 
-    return partitioned;
+    partitioned
 }
 
 // Returns an intersection of coordinates in all the sets. Or returns None if the iterator is empty.
 //
 // TODO: Try to use this with the ? early return
 fn common_coordinates<T : Eq + Hash + Clone>(all_sets_of_coordinates: &mut impl Iterator<Item = HashSet<T>>) -> Option<HashSet<T>> {
-    return match all_sets_of_coordinates.next() {
+    match all_sets_of_coordinates.next() {
         Some(first_set_of_coordinates) => {
             let common_coordinates = all_sets_of_coordinates.fold(first_set_of_coordinates, |acc, curr_set_of_coordinates| {
                 acc.intersection(&curr_set_of_coordinates).cloned().collect::<HashSet<_>>()
-            }); 
+            });
             Some(common_coordinates)
         }
         None => None

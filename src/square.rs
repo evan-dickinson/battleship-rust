@@ -35,7 +35,7 @@ impl Ship {
     pub fn expected_square_for_ship(ship_size: usize, square_idx: usize, incrementing_axis: Axis) -> Ship {
         assert!(square_idx < ship_size);
 
-        return if ship_size == 1 {
+        if ship_size == 1 {
             Ship::Dot
         }
         else {
@@ -71,7 +71,7 @@ pub enum Square {
 }
 
 impl Square {
-    pub fn is_ship(&self) -> bool {
+    pub fn is_ship(self) -> bool {
         match self {
             Square::Ship(_) => true,
             _               => false
@@ -79,7 +79,7 @@ impl Square {
     }
 
     pub fn from_char(square_char : char) -> Option<Self> {
-        return match square_char {
+        match square_char {
             ' ' => Some(Square::Unknown),
             '~' => Some(Square::Water),
             '*' => Some(Square::Ship(Ship::Any)),
@@ -121,7 +121,7 @@ impl fmt::Display for Square {
 
 impl From<char> for Square {
     fn from(square_char : char) -> Self {
-        return match Square::from_char(square_char) {
+        match Square::from_char(square_char) {
             Some(square) => square,
             None         => panic!("Unknown char".to_string()),
         }
