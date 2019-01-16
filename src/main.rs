@@ -1,6 +1,3 @@
-//#[macro_use]
-//extern crate nom;
-
 mod neighbor;
 mod square;
 mod layout;
@@ -107,7 +104,20 @@ fn main() {
         "3|       ",
     ];
 
-    let mut board = Board::new(&_puzzle6);
+    let _puzzle7 = vec![
+        "ships: 4sq x 1, 3sq x 1, ",
+        "       2sq x 2, 1sq x 3.",
+        "  1420213",
+        "2|       ",
+        "2|   <   ",
+        "1|       ",
+        "1|       ",
+        "3|       ",
+        "1|       ",
+        "3|       ",
+    ];
+
+    let mut board = Board::new(&_puzzle7);
 
     solve(&mut board);
 
