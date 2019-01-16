@@ -2,11 +2,13 @@ use crate::square::*;
 use crate::board::*;
 use crate::neighbor::*;
 
+use smallvec::SmallVec;
+
 pub fn place_ships_next_to_ends(board: &mut Board, changed: &mut bool) {
     let layout = board.layout;
     let ship_coords = layout.all_coordinates()
         .filter(|coord| { board[*coord].is_ship() })
-        .collect::<Vec<_>>();
+        .collect::<SmallVec<[_; 20]>>();
 
     for coord in ship_coords {
         let neighbor = match board[coord] {

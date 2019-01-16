@@ -2,12 +2,15 @@ use crate::square::*;
 use crate::board::*;
 use crate::neighbor::*;
 
+use smallvec::SmallVec;
+
+
 // Convert an AnyMiddle to a specific type of middle
 pub fn specify_middle(board: &mut Board, changed: &mut bool) {
     let layout = board.layout;
     let coords = layout.all_coordinates()
         .filter(|&coord| Square::Ship(Ship::AnyMiddle) == board[coord])
-        .collect::<Vec<_>>();
+        .collect::<SmallVec<[_; 32]>>();
 
     for coord in coords {
     	let vert_neighbors = [Neighbor::N, Neighbor::S];

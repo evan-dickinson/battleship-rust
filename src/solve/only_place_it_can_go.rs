@@ -9,8 +9,10 @@ use crate::layout::*;
 use std::collections::HashSet;
 use std::hash::Hash;
 
+use smallvec::SmallVec;
+
 pub fn find_only_place_for_ships(board: &mut Board, changed : &mut bool) {
-    let sizes = board.remaining_ship_sizes().collect::<Vec<_>>();
+    let sizes = board.remaining_ship_sizes().collect::<SmallVec<[_; 6]>>();
 
     for ship_size in sizes {
         let num_ships = board.ships_to_find_for_size(ship_size);
