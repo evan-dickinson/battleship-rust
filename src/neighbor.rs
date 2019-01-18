@@ -27,7 +27,7 @@ impl Neighbor {
         Neighbor::all_neighbors().iter()
             .filter(|&x| *x != exclude)
             .cloned()
-            .collect::<HashSet<Neighbor>>()
+            .collect()
     }
 
     pub fn surrounding_neighbors(ship_type: Ship) -> HashSet<Neighbor> {

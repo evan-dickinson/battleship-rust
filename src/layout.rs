@@ -1,5 +1,3 @@
-#![allow(clippy::needless_return)]
-
 use std::fmt;
 
 use crate::neighbor::*;
@@ -85,10 +83,10 @@ impl Layout {
         };
 
         if new_coord.row_num < self.num_rows && new_coord.col_num < self.num_cols {
-            return Some(new_coord);
+            Some(new_coord)
         }
         else {
-            return None;
+            None
         }
     }
 
@@ -99,7 +97,7 @@ impl Layout {
         let num_cols = self.num_cols;
         let num_squares = num_rows * num_cols;
 
-        return (0..num_squares).map(move |idx| {
+        (0..num_squares).map(move |idx| {
             Coord {
                 row_num: idx / num_cols,
                 col_num: idx % num_cols,
@@ -122,7 +120,7 @@ impl Layout {
             }
         });     
 
-        return rows.chain(cols);
+        rows.chain(cols)
     }    
 
     // Return all the coordinates along the specified row or col
@@ -136,8 +134,9 @@ impl Layout {
         let range = 0 .. minor_axis_ubound;
 
         let major_axis_idx = row_or_col.index;
-        return range.map(move |minor_axis_idx| {
-            return match row_or_col.axis {
+
+        range.map(move |minor_axis_idx| {
+            match row_or_col.axis {
                 Axis::Row => Coord {
                     row_num: major_axis_idx,
                     col_num: minor_axis_idx,
@@ -147,7 +146,7 @@ impl Layout {
                     col_num: major_axis_idx
                 }
             }
-        });
+        })
     }    
 
     pub fn coord_for_neighbor(&self, index: Coord,
@@ -175,13 +174,13 @@ impl Layout {
             i_row < i_num_rows && i_col < i_num_cols;
 
         if in_bounds {
-            return Some(Coord {
+            Some(Coord {
                 row_num: i_row as usize,
                 col_num: i_col as usize,
-            });
+            })
         }
         else {
-            return None;
+            None
         }        
     }
 
@@ -191,10 +190,10 @@ impl Layout {
         -> impl Iterator<Item = Coord> + 'a
         {
 
-        return neighbors.into_iter()
-        .filter_map(move |neighbor| {
-            self.coord_for_neighbor(index, *neighbor)
-        });
+        neighbors.into_iter()
+            .filter_map(move |neighbor| {
+                self.coord_for_neighbor(index, *neighbor)
+            })
     }    
 }
 
