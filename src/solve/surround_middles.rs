@@ -9,34 +9,33 @@ use crate::neighbor::*;
 
 // Add ships before/after a middle
 pub fn surround_middle_with_ships(board: &mut Board, changed: &mut bool) {
-    let layout = board.layout;
-    let coords_and_types = layout.all_coordinates()
+    // Find all the middles, and identify which neighbors to set
+    let coords_and_neighbors = board.layout.all_coordinates()
         .filter_map(|coord| {
-        	match board[coord] {
-        		Square::Ship(ship_type) if ship_type == Ship::VerticalMiddle || ship_type == Ship::HorizontalMiddle =>
-	       			Some((coord, ship_type)),
-        		_ => None
-        	}
+            match board[coord] {
+                Square::Ship(Ship::VerticalMiddle) => Some((
+                    coord,
+                    [Neighbor::N, Neighbor::S] // Set these neighbors to ships
+                )),
+                Square::Ship(Ship::HorizontalMiddle) => Some((
+                    coord,
+                    [Neighbor::E, Neighbor::W]
+                )),
+                _ => None,
+            }
         })
         .collect::<Vec<_>>();
 
-    for (coord, ship_type) in coords_and_types {
-    	let neighbors = if ship_type == Ship::VerticalMiddle {
-			vec![Neighbor::N, Neighbor::S]
-    	}
-    	else {
-			vec![Neighbor::E, Neighbor::W]
-    	};
+    for (coord, neighbors) in coords_and_neighbors {
+        for neighbor in neighbors.into_iter() {
+            // panic if neighbor_coord is out of bounds, because it means there's no space on the board
+            // to place the end. 
+            let neighbor_coord = board.layout.coord_for_neighbor(coord, *neighbor).unwrap();
 
-    	for neighbor in neighbors {
-    		// panic if neighbor_coord is out of bounds, because it means there's no space on the board
-    		// to place the end. 
-    		let neighbor_coord = layout.coord_for_neighbor(coord, neighbor).unwrap();
-
-    		if !board[neighbor_coord].is_ship() {
-    			board.set(neighbor_coord, Square::Ship(Ship::Any), changed);
-    		}
-    	}
+            if !board[neighbor_coord].is_ship() {
+                board.set(neighbor_coord, Square::Ship(Ship::Any), changed);
+            }
+        }
     }
 }
 

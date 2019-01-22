@@ -16,7 +16,6 @@ fn is_water_or_out_of_bounds<'a>(board: &'a Board, index: Coord, neighbors: impl
 
     // coords_for_neighbors filterd out coords that are out of bounds. 
     // Now check to see that all remaining neighbors are water.
-
     return neighbor_coords.all(|coord| board[coord] == Square::Water);
 }
 
@@ -25,11 +24,9 @@ fn is_ship<'a>(board: &'a Board, index: Coord, neighbors: impl IntoIterator<Item
 	// Can't use layout.coords_for_neighbors here because that filters out neigbors that are out of bounds
 
     return neighbors.into_iter().all(|&neighbor| {
-    	if let Some(coord) = board.layout.coord_for_neighbor(index, neighbor) {
-    		return board[coord].is_ship();
-    	}
-    	else {
-    		return false;
+    	match board.layout.coord_for_neighbor(index, neighbor) {
+    		Some(coord) => board[coord].is_ship(),
+    		None        => false,
     	}
     });
 }
@@ -44,7 +41,7 @@ pub fn specify_ships(board: &mut Board, changed: &mut bool) {
 
     for coord in ship_coords {
     	// Find the ship type that will update the most neighboring squares
-    	let mut neighbor_count : usize = 0;
+    	let mut neighbor_count: usize = 0;
     	let mut new_value = None;
 
     	for ship_type in Ship::all() {
@@ -54,7 +51,7 @@ pub fn specify_ships(board: &mut Board, changed: &mut bool) {
 
 	    	if is_water_or_out_of_bounds(board, coord, surrounding_neighbors.iter()) &&
 	    	   is_ship(board, coord, empty_neighbors) &&
-	    		surrounding_neighbors.len() > neighbor_count {
+	    	   surrounding_neighbors.len() > neighbor_count {
 
 	    		new_value = Some(ship_type);
 	    		neighbor_count = surrounding_neighbors.len();

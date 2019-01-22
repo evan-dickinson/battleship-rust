@@ -18,7 +18,7 @@ pub fn fill_with_water(board: &mut Board, changed : &mut bool) {
 pub fn fill_with_ships(board: &mut Board, changed: &mut bool) {
     for row_or_col in board.layout.rows_and_cols() {
         let num_unknown = board.layout.coordinates(row_or_col)
-            .filter(|coord| { board[*coord] == Square::Unknown } )
+            .filter(|coord| board[*coord] == Square::Unknown )
             .count();
 
         if num_unknown == board.ships_remaining(row_or_col) {
