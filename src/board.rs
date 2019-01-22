@@ -12,7 +12,7 @@ pub struct Board {
     squares: Vec<Vec<Square>>,
     ships_remaining_for_col: Vec<usize>,
     ships_remaining_for_row: Vec<usize>,
-    pub layout : Layout,
+    pub layout: Layout,
 }
 
 impl Board {
@@ -220,65 +220,20 @@ impl Board {
     }
 
     fn count_found_ships(&self, ship_size: usize) -> usize {
-        self.possible_coords_for_ship(ship_size)
+        self.layout.possible_coords_for_ship(ship_size)
             .filter(move |(coord, incrementing_axis)| {
                 self.ship_exists_at_coord(ship_size, *coord, *incrementing_axis)
             })
             .count()
     }
 
-    fn ship_exists_at_coord(&self, ship_size: usize, coord: Coord, incrementing_axis: Axis) -> bool {
-        return self.test_ship_at_coord(ship_size, coord, incrementing_axis,
-            |coord, square_idx| {
+    fn ship_exists_at_coord(&self, ship_size: usize, origin: Coord, incrementing_axis: Axis) -> bool {
+        self.layout.squares_in_ship(ship_size, origin, incrementing_axis)
+            .enumerate()
+            .all(|(square_idx, curr_coord)| {
                 let expected = Ship::expected_square_for_ship(ship_size, square_idx, incrementing_axis);
-                self[coord] == Square::Ship(expected)
-            });
-    }
-
-    // For a ship of a given size, iterate over coordinates (and axies) where a ship like that might be placed.
-    // This is very simple, and doesn't attempt to account for bounds, etc.
-    pub fn possible_coords_for_ship(&self, ship_size: usize) -> impl Iterator<Item = (Coord, Axis)> {
-        // When placing size = 1, we don't increment the coordinate so axis doesn't matter. But if we
-        // search by both axes, every coord will match twice. So only search by one axis, and we only match
-        // every candidate coordinate once.
-        let axes = if ship_size == 1 { 
-            &[Axis::Row][..] // Use [..] to create a slice, not a statically-sized array
-        }
-        else {
-            &[Axis::Row, Axis::Col][..]
-        };
-
-        let iterators = axes.into_iter().cloned().map(|axis| {
-            self.layout.all_coordinates().map(move |coord| (coord, axis) )
-        });
-
-        iterators.fold(None, |chained_iterators_opt: Option<Box<dyn Iterator<Item = _>>>, curr_iterator| {
-            match chained_iterators_opt {
-                None => Some(Box::new(curr_iterator)),
-                Some(prev_iterators) => Some(Box::new(prev_iterators.chain(curr_iterator)))
-            }
-        }).unwrap()
-    }
-
-    // Calls a test function repeatedly, for every square in the ship (originating at coord).
-    // Returns true if the test function returns true for every coordinate, and if the ship is in bounds.
-    pub fn test_ship_at_coord<T>(&self, ship_size: usize, coord: Coord, incrementing_axis: Axis, mut test : T) -> bool
-    where T: FnMut(Coord, usize) ->bool {
-
-        for square_idx in 0..ship_size {
-            if let Some(coord) = self.layout.offset(coord, square_idx, incrementing_axis) {
-
-                if !test(coord, square_idx) {
-                    return false;
-                }
-            }
-            else {
-                // Out of bounds
-                return false;
-            }
-        }
-
-        return true; // all tests passed
+                self[curr_coord] == Square::Ship(expected)                
+            })
     }
 }
 

@@ -70,7 +70,7 @@ pub struct Layout {
 impl Layout {
 
     // Return the coord that is the result of moving the eisting coord by `offset` sqares, in the given axis
-    pub fn offset(&self, coord : Coord, offset: usize, axis: Axis) -> Option<Coord> {
+    pub fn offset(&self, coord: Coord, offset: usize, axis: Axis) -> Option<Coord> {
         let new_coord = match axis {
             Axis::Row => Coord { 
                 row_num: coord.row_num + offset, 
@@ -105,6 +105,7 @@ impl Layout {
         })
     }    
 
+    // Iterate over every row and column in the layout
     pub fn rows_and_cols(&self) -> impl Iterator<Item = RowOrCol> {
         let rows = (0 .. self.num_rows).map(|row_num| {
             RowOrCol {
@@ -125,7 +126,7 @@ impl Layout {
 
     // Return all the coordinates along the specified row or col
     // todo: rename to coordinates_for
-    pub fn coordinates(&self, row_or_col : RowOrCol) -> impl Iterator<Item = Coord>  {
+    pub fn coordinates(&self, row_or_col: RowOrCol) -> impl Iterator<Item = Coord>  {
         // Count number of items in the minor axis
         let minor_axis_ubound = match row_or_col.axis {
             Axis::Row => self.num_cols,
@@ -195,6 +196,61 @@ impl Layout {
                 self.coord_for_neighbor(index, *neighbor)
             })
     }    
+
+    // Given a starting point for a ship, iterate over the coordinates that make up the squares of that ship.
+    //
+    // Panics: If the ship is not in bounds
+    pub fn squares_in_ship<'a>(&'a self, ship_size: usize, origin: Coord, incrementing_axis: Axis) -> impl Iterator<Item = Coord> + 'a {
+        (0..ship_size).map(move |square_idx| {
+            self.offset(origin, square_idx, incrementing_axis).unwrap()
+        })
+    }
+
+    // For a ship of a given size, iterate over coordinates (and axies) where a ship like that might be placed.
+    // It only returns values that will be in bounds
+    pub fn possible_coords_for_ship<'a>(&'a self, ship_size: usize) -> impl Iterator<Item = (Coord, Axis)> + 'a {
+        // When placing size = 1, we don't increment the coordinate so axis doesn't matter. But if we
+        // search by both axes, every coord will match twice. So only search by one axis, and we only match
+        // every candidate coordinate once.
+        let axes = if ship_size == 1 { 
+            &[Axis::Row][..] // Use [..] to create a slice, not a statically-sized array
+        }
+        else {
+            &[Axis::Row, Axis::Col][..]
+        };
+
+        // Make a sequence of iterators. One iterator per axis.
+        // Iterator 1: (_, Row), (_, Row), (_, Row)
+        // Iterator 2: (_, Col), (_, Col), (_, Col)
+        let iterators = axes.into_iter().cloned().map(move |incrementing_axis| {
+            self.all_coordinates()
+            .map(move |origin| (origin, incrementing_axis) )
+            .filter(move |(origin, incrementing_axis)| {
+                self.ship_in_bounds(ship_size, *origin, *incrementing_axis)
+            })
+        });
+
+        // Chain all the iterators together
+        // Resulting iterator: (_, Row), (_, Row), ... (_, Col), (_, Col), ...
+        iterators.fold(None, |chained_iterators_opt: Option<Box<dyn Iterator<Item = _>>>, curr_iterator| {
+            match chained_iterators_opt {
+                None => Some(Box::new(curr_iterator)),
+                Some(prev_iterators) => Some(Box::new(prev_iterators.chain(curr_iterator)))
+            }
+        }).unwrap()
+    }
+
+    // Would a ship at the given origin fit in bounds?
+    fn ship_in_bounds(&self, ship_size: usize, origin: Coord, incrementing_axis: Axis) -> bool {
+        let num_squares_in_bounds = (0..ship_size).filter_map(|square_idx| {
+            // Offset will return None if it goes out of bounds
+            self.offset(origin, square_idx, incrementing_axis)
+        })
+        .count();
+
+        num_squares_in_bounds == ship_size
+    }
+
 }
 
 #[cfg(test)] use crate::test_utils::*;
@@ -249,5 +305,20 @@ mod layout_tests {
         // Row - Out of bounds
         let new_coord = layout.offset(coord, 2, Axis::Col);
         assert_eq!(new_coord, None);        
+    }
+
+    #[test]
+    fn test_ship_in_bounds() {
+        let layout = Layout { num_rows: 3, num_cols: 4 };
+        let origin = Coord { row_num: 0, col_num: 1};
+
+        // In bounds
+        let in_bounds = layout.ship_in_bounds(3, origin, Axis::Row);
+        assert_eq!(in_bounds, true);
+
+        // Out of bounds
+        let in_bounds = layout.ship_in_bounds(5, origin, Axis::Col);
+        assert_eq!(in_bounds, false);
+
     }
 }

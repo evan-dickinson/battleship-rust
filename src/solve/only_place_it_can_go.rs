@@ -23,7 +23,7 @@ pub fn find_only_place_for_ships(board: &mut Board, changed : &mut bool) {
 }
 
 fn find_only_place_for_ship(board: &mut Board, ship_size: usize, num_ships: usize, changed: &mut bool) {
-    let placements = board.possible_coords_for_ship(ship_size)
+    let placements = board.layout.possible_coords_for_ship(ship_size)
         .filter_map(|(coord, incrementing_axis)| {
             let constant_axis = incrementing_axis.cross_axis();
 
@@ -136,24 +136,25 @@ fn enough_free_ships_on_incrementing_axis(board: &Board, ship_size: usize, coord
 // None        -- One of the following:
 //                - Ship does not fit here
 //                - Ship is already placed here
-fn can_fit_ship_at_coord(board: &Board, ship_size: usize, coord: Coord, incrementing_axis: Axis) -> Option<usize> {
+fn can_fit_ship_at_coord(board: &Board, ship_size: usize, origin: Coord, incrementing_axis: Axis) -> Option<usize> {
     let mut num_ship_squares = 0;
     let mut all_matches_exact = true;
 
-    let fits = board.test_ship_at_coord(ship_size, coord, incrementing_axis,
-        |coord, square_idx| {
-            if board[coord].is_ship() {
+    let fits = board.layout.squares_in_ship(ship_size, origin, incrementing_axis)
+        .enumerate()
+        .all(|(square_idx, curr_coord)| {
+            if board[curr_coord].is_ship() {
                 num_ship_squares += 1;
             }
 
             let expected = Ship::expected_square_for_ship(ship_size, square_idx, incrementing_axis);
             
-            let is_exact_match =  board[coord] == Square::Ship(expected);
+            let is_exact_match =  board[curr_coord] == Square::Ship(expected);
             let is_match = is_exact_match ||
-                board[coord] == Square::Unknown || 
-                board[coord] == Square::Ship(Ship::Any) ||
+                board[curr_coord] == Square::Unknown || 
+                board[curr_coord] == Square::Ship(Ship::Any) ||
                 (
-                    board[coord] == Square::Ship(Ship::AnyMiddle) &&
+                    board[curr_coord] == Square::Ship(Ship::AnyMiddle) &&
                     (expected == Ship::VerticalMiddle || expected == Ship::HorizontalMiddle)
                 );              
 
@@ -172,8 +173,10 @@ fn can_fit_ship_at_coord(board: &Board, ship_size: usize, coord: Coord, incremen
 
 // Would placing a ship here cause it to touch another ship?
 // Return: FALSE if it would touch another ship, TRUE if it would not touch.
-fn would_ship_at_coord_be_clear_of_other_ships(board: &Board, ship_size: usize, starting_coord: Coord, incrementing_axis: Axis) -> bool {
-    board.test_ship_at_coord(ship_size, starting_coord, incrementing_axis, |curr_coord, square_idx| {
+fn would_ship_at_coord_be_clear_of_other_ships(board: &Board, ship_size: usize, origin: Coord, incrementing_axis: Axis) -> bool {
+    board.layout.squares_in_ship(ship_size, origin, incrementing_axis)
+    .enumerate()
+    .all(|(square_idx, curr_coord)| {
         let is_first_square  = square_idx == 0;
         let is_last_square   = square_idx == ship_size - 1;
         let is_middle_square = !is_first_square && !is_last_square;
@@ -200,17 +203,17 @@ fn would_ship_at_coord_be_clear_of_other_ships(board: &Board, ship_size: usize, 
             (is_middle_square, middle_square_neighbors),
             (is_last_square,   last_square_neighbors),
         ].into_iter()
-            .filter_map(|(is_used, neighbors)|
-                // is_used means "do we want to check these neighbors"
-                if *is_used { Some(neighbors) } else { None }
-            )
-            .all(|neighbors| {
-                board.layout
-                    .coords_for_neighbors(curr_coord, neighbors)
-                    .all(|neighbor_coord| {
-                        !board[neighbor_coord].is_ship()
-                    })
+        .filter_map(|(is_used, neighbors)|
+            // is_used means "do we want to check these neighbors"
+            if *is_used { Some(neighbors) } else { None }
+        )
+        .all(|neighbors| {
+            board.layout
+            .coords_for_neighbors(curr_coord, neighbors)
+            .all(|neighbor_coord| {
+                !board[neighbor_coord].is_ship()
             })
+        })
     })
 }
 
@@ -464,11 +467,6 @@ mod test_only_place_it_can_go {
         let coord = Coord { row_num: 0, col_num: 2 };
         let result = can_fit_ship_at_coord(&board, 1, coord, Axis::Col);
         assert_eq!(result, Some(0));    
-
-        // Cannot place it: Not enough room
-        let coord = Coord { row_num: 0, col_num: 0 };
-        let result = can_fit_ship_at_coord(&board, 5, coord, Axis::Col);
-        assert_eq!(result, None);
 
         // Cannot place it: Water in the way
         let coord = Coord { row_num: 1, col_num: 0 };
