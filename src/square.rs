@@ -1,6 +1,8 @@
 use std::fmt;
+use std::collections::HashSet;
 
 use crate::layout::*;
+use crate::neighbor::*;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Ship {
@@ -62,6 +64,37 @@ impl Ship {
             }
         }
     }    
+
+    // For a given ship type, which neigbors should be set to water
+    pub fn water_neighbors(&self) -> HashSet<Neighbor> {
+        match *self {
+            Ship::Any       => [
+                Neighbor::NW, Neighbor::NE,
+                Neighbor::SW, Neighbor::SE,
+            ].into_iter().cloned().collect(),
+
+            Ship::Dot       => Neighbor::all_neighbors(),
+
+            Ship::LeftEnd   => Neighbor::all_except(Neighbor::E),
+            Ship::RightEnd  => Neighbor::all_except(Neighbor::W),
+            Ship::TopEnd    => Neighbor::all_except(Neighbor::S),
+            Ship::BottomEnd => Neighbor::all_except(Neighbor::N),
+
+            Ship::VerticalMiddle => [
+                Neighbor::NE, Neighbor::E, Neighbor::SE,
+                Neighbor::NW, Neighbor::W, Neighbor::SW,
+            ].into_iter().cloned().collect(),
+            Ship::HorizontalMiddle => [
+                Neighbor::NW, Neighbor::N, Neighbor::NE,
+                Neighbor::SW, Neighbor::S, Neighbor::SE,
+            ].into_iter().cloned().collect(),
+            Ship::AnyMiddle => [
+                Neighbor::NW, Neighbor::NE,
+                Neighbor::SW, Neighbor::SE,
+            ].into_iter().cloned().collect(),
+        }
+    }
+
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]

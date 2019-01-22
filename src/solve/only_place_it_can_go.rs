@@ -5,7 +5,6 @@
 use crate::square::*;
 use crate::board::*;
 use crate::layout::*;
-use crate::neighbor::*;
 
 use std::collections::HashSet;
 use std::hash::Hash;
@@ -186,14 +185,14 @@ fn would_ship_at_coord_be_clear_of_other_ships(board: &Board, ship_size: usize, 
         let (first_square_neighbors, middle_square_neighbors, last_square_neighbors) =
             match incrementing_axis {
                 Axis::Col => ( // Horizonal ship increments by columns
-                    Neighbor::surrounding_neighbors(Ship::LeftEnd),
-                    Neighbor::surrounding_neighbors(Ship::HorizontalMiddle),
-                    Neighbor::surrounding_neighbors(Ship::RightEnd)
+                    Ship::LeftEnd.water_neighbors(),
+                    Ship::HorizontalMiddle.water_neighbors(),
+                    Ship::RightEnd.water_neighbors()
                 ),
                 Axis::Row => ( // Vertical ship increments by rows
-                    Neighbor::surrounding_neighbors(Ship::TopEnd),
-                    Neighbor::surrounding_neighbors(Ship::VerticalMiddle),
-                    Neighbor::surrounding_neighbors(Ship::BottomEnd)
+                    Ship::TopEnd.water_neighbors(),
+                    Ship::VerticalMiddle.water_neighbors(),
+                    Ship::BottomEnd.water_neighbors()
                 )
             };
 

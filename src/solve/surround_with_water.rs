@@ -4,7 +4,6 @@
 
 use crate::square::*;
 use crate::board::*;
-use crate::neighbor::*;
 
 pub fn surround_ships_with_water(board: &mut Board, changed: &mut bool) {
     let layout = board.layout;
@@ -20,7 +19,7 @@ pub fn surround_ships_with_water(board: &mut Board, changed: &mut bool) {
         .collect::<Vec<_>>();
 
     for (coord, ship_type) in coords_and_types {
-        let neighbors = Neighbor::surrounding_neighbors(ship_type);
+        let neighbors = ship_type.water_neighbors();
 
         let mut neighbor_coords = layout.coords_for_neighbors(coord, neighbors.iter());
         board.set_bulk(&mut neighbor_coords, Square::Water, changed);

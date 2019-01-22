@@ -46,15 +46,15 @@ pub fn specify_ships(board: &mut Board, changed: &mut bool) {
 
     	for ship_type in Ship::all() {
     		let all_neighbors = Neighbor::all_neighbors();
-    		let surrounding_neighbors = Neighbor::surrounding_neighbors(ship_type);
-    		let empty_neighbors = all_neighbors.difference(&surrounding_neighbors);
+    		let water_neighbors = ship_type.water_neighbors();
+    		let non_water_neighbors = all_neighbors.difference(&water_neighbors);
 
-	    	if is_water_or_out_of_bounds(board, coord, surrounding_neighbors.iter()) &&
-	    	   is_ship(board, coord, empty_neighbors) &&
-	    	   surrounding_neighbors.len() > neighbor_count {
+	    	if is_water_or_out_of_bounds(board, coord, water_neighbors.iter()) &&
+	    	   is_ship(board, coord, non_water_neighbors) &&
+	    	   water_neighbors.len() > neighbor_count {
 
 	    		new_value = Some(ship_type);
-	    		neighbor_count = surrounding_neighbors.len();
+	    		neighbor_count = water_neighbors.len();
 	    	}
     	}
 

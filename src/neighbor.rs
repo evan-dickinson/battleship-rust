@@ -1,7 +1,5 @@
 use std::collections::HashSet;
 
-use crate::square::*;
-
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub enum Neighbor {
     N, NE, E, SE, S, SW, W, NW
@@ -9,7 +7,7 @@ pub enum Neighbor {
 
 impl Neighbor {
     pub fn all_neighbors() -> HashSet<Neighbor> {
-        let all_neighbors = vec![
+        let all_neighbors = [
             Neighbor::N,
             Neighbor::NE,
             Neighbor::E,
@@ -20,43 +18,13 @@ impl Neighbor {
             Neighbor::NW,
         ];
 
-        all_neighbors.iter().cloned().collect::<HashSet<Neighbor>>()
+        all_neighbors.into_iter().cloned().collect()
     }
 
-    fn all_except(exclude : Neighbor) -> HashSet<Neighbor> {
+    pub fn all_except(exclude: Neighbor) -> HashSet<Neighbor> {
         Neighbor::all_neighbors().iter()
             .filter(|&x| *x != exclude)
             .cloned()
             .collect()
     }
-
-    pub fn surrounding_neighbors(ship_type: Ship) -> HashSet<Neighbor> {
-        match ship_type {
-            Ship::Any       => vec![
-                Neighbor::NW, Neighbor::NE,
-                Neighbor::SW, Neighbor::SE,
-            ].iter().cloned().collect(),
-
-            Ship::Dot       => Neighbor::all_neighbors(),
-
-            Ship::LeftEnd   => Neighbor::all_except(Neighbor::E),
-            Ship::RightEnd  => Neighbor::all_except(Neighbor::W),
-            Ship::TopEnd    => Neighbor::all_except(Neighbor::S),
-            Ship::BottomEnd => Neighbor::all_except(Neighbor::N),
-
-            Ship::VerticalMiddle => vec![
-                Neighbor::NE, Neighbor::E, Neighbor::SE,
-                Neighbor::NW, Neighbor::W, Neighbor::SW,
-            ].iter().cloned().collect(),
-            Ship::HorizontalMiddle => vec![
-                Neighbor::NW, Neighbor::N, Neighbor::NE,
-                Neighbor::SW, Neighbor::S, Neighbor::SE,
-            ].iter().cloned().collect(),
-            Ship::AnyMiddle => vec![
-                Neighbor::NW, Neighbor::NE,
-                Neighbor::SW, Neighbor::SE,
-            ].iter().cloned().collect(),
-        }
-    }
-
 }
