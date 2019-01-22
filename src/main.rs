@@ -117,7 +117,22 @@ fn main() {
         "3|       ",
     ];
 
-    let mut board = Board::new(&_puzzle7);
+    // https://lukerissacher.com/battleships/ICdJJIEkDo-Q4A4kg
+    let _puzzle8 = vec![
+        "ships: 4sq x 1, 3sq x 2, ",
+        "       2sq x 3, 1sq x 3.",
+        "  40405020",
+        "1|      ^ ",
+        "4|        ",
+        "2|        ",
+        "3|        ",
+        "1|  v     ",
+        "1|    v   ",
+        "0|      ^ ",
+        "3|        ",
+    ];
+
+    let mut board = Board::new(&_puzzle8);
 
     solve(&mut board);
 
