@@ -129,65 +129,46 @@ impl Board {
     // Setting values
 
     // changed: set to true if board[index] != value, othewise do not set
-    pub fn set(&mut self, index : Coord, value : Square, changed : &mut bool) {
-        let curr_value = self.squares[index.row_num][index.col_num];
+    pub fn set(&mut self, index: Coord, new_value: Square, changed: &mut bool) {
+        let curr_value = self[index];
 
-        if curr_value == value {
+        if curr_value == new_value {
             return;
         }
 
         // Check for logic errors. You can only:
         // - Refine Ship::Any to a more specific kind of ship
+        // - Refine Ship::AnyMiddle to a more specific kind of middle
         // - Change Unknown to another value
-
-        let was_already_ship;
         if curr_value == Square::Ship(Ship::Any) {
-            let is_ship = match value {
-                Square::Ship(_) => true,
-                _               => false,
-            };
-            assert_eq!(is_ship, true);
-
-            was_already_ship = true;
+            assert!(new_value.is_ship());
         }
         else if curr_value == Square::Ship(Ship::AnyMiddle) {
-            let is_middle = match value {
-                Square::Ship(Ship::AnyMiddle) |
-                Square::Ship(Ship::VerticalMiddle) |
-                Square::Ship(Ship::HorizontalMiddle) => true,
-                _ => false,
-            };
-            assert_eq!(is_middle, true);
-
-            was_already_ship = true;
+            assert!(new_value.is_ship_middle());
         }
         else {
             assert_eq!(curr_value, Square::Unknown);
-
-            was_already_ship = false;
         }
 
-        self.squares[index.row_num][index.col_num] = value;
+        self.squares[index.row_num][index.col_num] = new_value;
 
         // Update ships remaining
-        if let Square::Ship(_) = value {
-            if !was_already_ship {
-                self.ships_remaining_for_row[index.row_num] -= 1;
-                self.ships_remaining_for_col[index.col_num] -= 1;
-            }
+        if new_value.is_ship() && !curr_value.is_ship() {
+            self.ships_remaining_for_row[index.row_num] -= 1;
+            self.ships_remaining_for_col[index.col_num] -= 1;
         }
 
         *changed = true;
     }
 
-    pub fn set_bulk(&mut self, indexes : &mut Iterator<Item = Coord>, value : Square, changed : &mut bool) {
+    pub fn set_bulk(&mut self, indexes: &mut Iterator<Item = Coord>, value : Square, changed: &mut bool) {
         indexes.for_each(|index| {
             self.set(index, value, changed);
         });
     }
 
     // In the given row/col, replace all Unknown squares with the specified value
-    pub fn replace_unknown(&mut self, row_or_col : RowOrCol, new_value : Square, changed : &mut bool) {
+    pub fn replace_unknown(&mut self, row_or_col: RowOrCol, new_value: Square, changed: &mut bool) {
         for coord in self.layout.coordinates(row_or_col) {
             if self[coord] == Square::Unknown {
                 self.set(coord, new_value, changed);
@@ -198,13 +179,15 @@ impl Board {
     /////////////////////////////////////////////////////////////////////
     //
     // Contents of the board
+
+    // TODO: Should this also ensure that self.remaining_ship_sizes() is empty?
     pub fn is_solved(&self) -> bool {
         return self.layout.all_coordinates()
             .all(|coord| self[coord] != Square::Unknown);
     }
 
     // Count number of ships remaining in the given row/col
-    pub fn ships_remaining(&self, row_or_col : RowOrCol) -> usize {
+    pub fn ships_remaining(&self, row_or_col: RowOrCol) -> usize {
         return match row_or_col.axis {
             Axis::Row => self.ships_remaining_for_row[row_or_col.index],
             Axis::Col => self.ships_remaining_for_col[row_or_col.index],
@@ -263,10 +246,10 @@ impl Board {
         // search by both axes, every coord will match twice. So only search by one axis, and we only match
         // every candidate coordinate once.
         let axes = if ship_size == 1 { 
-            vec![Axis::Row]
+            &[Axis::Row][..] // Use [..] to return a slice, not a statically-sized array
         }
         else {
-            vec![Axis::Row, Axis::Col]
+            &[Axis::Row, Axis::Col][..]
         };
 
         let layout = self.layout;

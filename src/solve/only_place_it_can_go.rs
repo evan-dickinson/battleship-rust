@@ -188,6 +188,7 @@ fn would_ship_at_coord_be_clear_of_other_ships(board: &Board, ship_size: usize, 
                 )
             };
 
+        // Find the neighbors that are relevant to check for curr_coord
         [
             (is_first_square,  first_square_neighbors),
             (is_middle_square, middle_square_neighbors),

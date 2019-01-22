@@ -79,7 +79,17 @@ impl Square {
         }
     }
 
-    pub fn from_char(square_char : char) -> Option<Self> {
+    pub fn is_ship_middle(self) -> bool {
+        match self {
+            Square::Ship(Ship::AnyMiddle)        |
+            Square::Ship(Ship::VerticalMiddle)   |
+            Square::Ship(Ship::HorizontalMiddle) => true,
+
+            _ => false,            
+        }
+    }
+
+    pub fn from_char(square_char: char) -> Option<Self> {
         match square_char {
             ' ' => Some(Square::Unknown),
             '~' => Some(Square::Water),
