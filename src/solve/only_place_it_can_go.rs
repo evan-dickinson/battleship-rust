@@ -23,19 +23,25 @@ pub fn find_only_place_for_ships(board: &mut Board, changed : &mut bool) {
 }
 
 fn find_only_place_for_ship(board: &mut Board, ship_size: usize, num_ships: usize, changed: &mut bool) {
-    let mut placements : Vec<(Coord, Axis)> = vec![];
+    let placements = board.possible_coords_for_ship(ship_size)
+        .filter_map(|(coord, incrementing_axis)| {
+            let constant_axis = incrementing_axis.cross_axis();
 
-    board.iterate_possible_ships(ship_size, |coord, incrementing_axis| {
-        let constant_axis = incrementing_axis.cross_axis();
-
-        if let Some(num_ship_squares) = can_fit_ship_at_coord(board, ship_size, coord, incrementing_axis) {
-            if would_ship_at_coord_be_clear_of_other_ships(board, ship_size, coord, incrementing_axis) &&  
-               enough_free_ships_on_constant_axis(board, ship_size, coord, constant_axis, num_ship_squares) &&
-               enough_free_ships_on_incrementing_axis(board, ship_size, coord, incrementing_axis) {
-                placements.push((coord, incrementing_axis));
+            if let Some(num_ship_squares) = can_fit_ship_at_coord(board, ship_size, coord, incrementing_axis) {
+                if would_ship_at_coord_be_clear_of_other_ships(board, ship_size, coord, incrementing_axis) &&  
+                   enough_free_ships_on_constant_axis(board, ship_size, coord, constant_axis, num_ship_squares) &&
+                   enough_free_ships_on_incrementing_axis(board, ship_size, coord, incrementing_axis) {
+                    Some((coord, incrementing_axis))
+                }
+                else {
+                    None
+                }
             }
-        }
-    });
+            else {
+                None
+            }
+        })
+        .collect::<Vec<_>>();
 
     if placements.len() == num_ships {
         // We know the placement of every square in the ships. Fill in the complete ships.

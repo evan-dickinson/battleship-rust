@@ -220,15 +220,11 @@ impl Board {
     }
 
     fn count_found_ships(&self, ship_size: usize) -> usize {
-        let mut ship_count = 0;
-
-        self.iterate_possible_ships(ship_size, |coord, incrementing_axis| {
-            if self.ship_exists_at_coord(ship_size, coord, incrementing_axis) {
-                ship_count += 1;
-            }            
-        });
-
-        return ship_count;
+        self.possible_coords_for_ship(ship_size)
+            .filter(move |(coord, incrementing_axis)| {
+                self.ship_exists_at_coord(ship_size, *coord, *incrementing_axis)
+            })
+            .count()
     }
 
     fn ship_exists_at_coord(&self, ship_size: usize, coord: Coord, incrementing_axis: Axis) -> bool {
@@ -239,25 +235,29 @@ impl Board {
             });
     }
 
-    // TODO: This should return an interator, but I'm not sure how to do that
-    pub fn iterate_possible_ships<F>(&self, ship_size: usize, mut callback : F)
-    where F: FnMut(Coord, Axis) {
+    // For a ship of a given size, iterate over coordinates (and axies) where a ship like that might be placed.
+    // This is very simple, and doesn't attempt to account for bounds, etc.
+    pub fn possible_coords_for_ship(&self, ship_size: usize) -> impl Iterator<Item = (Coord, Axis)> {
         // When placing size = 1, we don't increment the coordinate so axis doesn't matter. But if we
         // search by both axes, every coord will match twice. So only search by one axis, and we only match
         // every candidate coordinate once.
         let axes = if ship_size == 1 { 
-            &[Axis::Row][..] // Use [..] to return a slice, not a statically-sized array
+            &[Axis::Row][..] // Use [..] to create a slice, not a statically-sized array
         }
         else {
             &[Axis::Row, Axis::Col][..]
         };
 
-        let layout = self.layout;
-        for coord in layout.all_coordinates() {
-            for incrementing_axis in axes.iter() {
-                callback(coord, *incrementing_axis);
+        let iterators = axes.into_iter().cloned().map(|axis| {
+            self.layout.all_coordinates().map(move |coord| (coord, axis) )
+        });
+
+        iterators.fold(None, |chained_iterators_opt: Option<Box<dyn Iterator<Item = _>>>, curr_iterator| {
+            match chained_iterators_opt {
+                None => Some(Box::new(curr_iterator)),
+                Some(prev_iterators) => Some(Box::new(prev_iterators.chain(curr_iterator)))
             }
-        }   
+        }).unwrap()
     }
 
     // Calls a test function repeatedly, for every square in the ship (originating at coord).
