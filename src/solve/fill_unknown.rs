@@ -17,7 +17,7 @@ pub fn fill_with_water(board: &mut Board, changed : &mut bool) {
 // fill the blank spots with ships
 pub fn fill_with_ships(board: &mut Board, changed: &mut bool) {
     for row_or_col in board.layout.rows_and_cols() {
-        let num_unknown = board.layout.coordinates(row_or_col)
+        let num_unknown = board.layout.coords_for(row_or_col)
             .filter(|coord| board[*coord] == Square::Unknown )
             .count();
 

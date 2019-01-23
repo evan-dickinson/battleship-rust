@@ -124,8 +124,7 @@ impl Layout {
     }    
 
     // Return all the coordinates along the specified row or col
-    // todo: rename to coordinates_for
-    pub fn coordinates(&self, row_or_col: RowOrCol) -> impl Iterator<Item = Coord>  {
+    pub fn coords_for(&self, row_or_col: RowOrCol) -> impl Iterator<Item = Coord>  {
         // Count number of items in the minor axis
         let minor_axis_ubound = match row_or_col.axis {
             Axis::Row => self.num_cols,

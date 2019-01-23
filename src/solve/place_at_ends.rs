@@ -2,15 +2,9 @@ use crate::square::*;
 use crate::board::*;
 use crate::neighbor::*;
 
-use smallvec::SmallVec;
 
 pub fn place_ships_next_to_ends(board: &mut Board, changed: &mut bool) {
-    let layout = board.layout;
-    let ship_coords = layout.all_coordinates()
-        .filter(|coord| { board[*coord].is_ship() })
-        .collect::<SmallVec<[_; 20]>>();
-
-    for coord in ship_coords {
+    for coord in board.layout.all_coordinates() {
         let neighbor = match board[coord] {
             Square::Ship(Ship::TopEnd)    => Neighbor::S,
             Square::Ship(Ship::BottomEnd) => Neighbor::N,
@@ -22,7 +16,7 @@ pub fn place_ships_next_to_ends(board: &mut Board, changed: &mut bool) {
         // Panic if neighbor is out of bounds. That would mean, for example, that there's the
         // top end of a ship on the last row of the board. There would be no place for the rest
         // of the ship to go.
-        let neighbor_coord = layout.coord_for_neighbor(coord, neighbor).unwrap();
+        let neighbor_coord = board.layout.coord_for_neighbor(coord, neighbor).unwrap();
         if board[neighbor_coord] == Square::Unknown {
         	board.set(neighbor_coord, Square::Ship(Ship::Any), changed);
         }

@@ -163,7 +163,7 @@ impl Board {
 
     // In the given row/col, replace all Unknown squares with the specified value
     pub fn replace_unknown(&mut self, row_or_col: RowOrCol, new_value: Square, changed: &mut bool) {
-        for coord in self.layout.coordinates(row_or_col) {
+        for coord in self.layout.coords_for(row_or_col) {
             if self[coord] == Square::Unknown {
                 self.set(coord, new_value, changed);
             }
@@ -307,7 +307,7 @@ mod test {
     #[test]
     fn it_accesses_col() {
         let board = make_test_board();
-        let mut coords = board.layout.coordinates(RowOrCol {
+        let mut coords = board.layout.coords_for(RowOrCol {
             axis:  Axis::Col,
             index: 1
         });
@@ -399,7 +399,7 @@ mod test {
             index: 1,
         };
 
-        let mut col_coords = board.layout.coordinates(col);
+        let mut col_coords = board.layout.coords_for(col);
 
         let mut expected_coord;
 
