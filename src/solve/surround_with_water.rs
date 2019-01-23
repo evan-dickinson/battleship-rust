@@ -17,7 +17,7 @@ pub fn surround_ships_with_water(board: &mut Board, changed: &mut bool) {
         .map(|(coord, ship_type)| {
             ship_type.water_neighbors()
                 .into_iter()
-                .filter_map(move |neighbor| layout.coord_for_neighbor(coord, neighbor))
+                .filter_map(move |neighbor| coord.neighbor(neighbor))
         })
         .flatten()
         .collect::<Vec<_>>();

@@ -401,7 +401,6 @@ pub fn parse_board(text: &str) -> Board {
 #[cfg(test)]
 mod board_tests {
     use super::*;
-    use crate::layout::*;
 
     #[test]
     fn it_parses_board_no_ships_to_find() {
@@ -417,7 +416,8 @@ mod board_tests {
     	assert_eq!(board.layout.num_cols, 3);
     	assert_eq!(board.layout.num_rows, 2);
 
-    	assert_eq!(board[Coord{row_num: 1, col_num: 2}], Square::Ship(Ship::Any));
+        let coord = board.layout.coord(2, 1);
+    	assert_eq!(board[coord], Square::Ship(Ship::Any));
     }
 
     #[test]
@@ -435,7 +435,8 @@ mod board_tests {
     	assert_eq!(board.layout.num_cols, 3);
     	assert_eq!(board.layout.num_rows, 2);
 
-    	assert_eq!(board[Coord{row_num: 1, col_num: 2}], Square::Ship(Ship::Any));
+        let coord = board.layout.coord(2, 1);
+    	assert_eq!(board[coord], Square::Ship(Ship::Any));
 
     	assert_eq!(board.ships_to_find_for_size(3), 0);
     	assert_eq!(board.ships_to_find_for_size(2), 1);

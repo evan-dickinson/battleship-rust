@@ -6,7 +6,8 @@ use crate::square::*;
 use crate::board::*;
 
 pub fn fill_with_water(board: &mut Board, changed : &mut bool) {
-    for row_or_col in board.layout.rows_and_cols() {
+    let layout = board.layout;
+    for row_or_col in layout.rows_and_cols() {
         if board.ships_remaining(row_or_col) == 0 {
             board.replace_unknown(row_or_col, Square::Water, changed);
         }
@@ -16,8 +17,9 @@ pub fn fill_with_water(board: &mut Board, changed : &mut bool) {
 // If number of Unknown squares on an axis == number of ships unaccounted for,
 // fill the blank spots with ships
 pub fn fill_with_ships(board: &mut Board, changed: &mut bool) {
-    for row_or_col in board.layout.rows_and_cols() {
-        let num_unknown = board.layout.coords_for(row_or_col)
+    let layout = board.layout;
+    for row_or_col in layout.rows_and_cols() {
+        let num_unknown = row_or_col.coords()
             .filter(|coord| board[*coord] == Square::Unknown )
             .count();
 

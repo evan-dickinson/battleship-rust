@@ -5,7 +5,8 @@ use crate::neighbor::*;
 use smallvec::SmallVec;
 
 
-// Convert an AnyMiddle to a specific type of middle
+// Convert an AnyMiddle to a specific type of middle, based on
+// whether or not it's surrounded by water.
 pub fn specify_middle(board: &mut Board, changed: &mut bool) {
     let layout = board.layout;
     let coords = layout.all_coordinates()
@@ -14,11 +15,11 @@ pub fn specify_middle(board: &mut Board, changed: &mut bool) {
 
     for coord in coords {
     	let is_surrounded_vert = [Neighbor::N, Neighbor::S].into_iter()
-    		.filter_map(|&neighbor| board.layout.coord_for_neighbor(coord, neighbor))
+    		.filter_map(|&neighbor| coord.neighbor(neighbor))
     		.any(|coord| board[coord] == Square::Water);
 
     	let is_surrounded_horz = [Neighbor::E, Neighbor::W].into_iter()
-    		.filter_map(|&neighbor| board.layout.coord_for_neighbor(coord, neighbor))
+    		.filter_map(|&neighbor| coord.neighbor(neighbor))
     		.any(|coord| board[coord] == Square::Water);
 
     	assert_eq!(is_surrounded_vert && is_surrounded_horz, false);

@@ -3,7 +3,8 @@ use crate::board::*;
 use crate::neighbor::*;
 
 pub fn place_ships_next_to_ends(board: &mut Board, changed: &mut bool) {
-    for coord in board.layout.all_coordinates() {
+	let layout = board.layout;
+    for coord in layout.all_coordinates() {
         let neighbor = match board[coord] {
             Square::Ship(Ship::TopEnd)    => Neighbor::S,
             Square::Ship(Ship::BottomEnd) => Neighbor::N,
@@ -15,7 +16,7 @@ pub fn place_ships_next_to_ends(board: &mut Board, changed: &mut bool) {
         // Panic if neighbor is out of bounds. That would mean, for example, that there's the
         // top end of a ship on the last row of the board. There would be no place for the rest
         // of the ship to go.
-        let neighbor_coord = board.layout.coord_for_neighbor(coord, neighbor).unwrap();
+        let neighbor_coord = coord.neighbor(neighbor).unwrap();
         if board[neighbor_coord] == Square::Unknown {
         	board.set(neighbor_coord, Square::Ship(Ship::Any), changed);
         }

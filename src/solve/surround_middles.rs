@@ -9,8 +9,9 @@ use crate::neighbor::*;
 
 // Add ships before/after a middle
 pub fn surround_middle_with_ships(board: &mut Board, changed: &mut bool) {
+    let layout = board.layout;
     // Find all the middles, and identify which neighbors to set
-    let coords_and_neighbors = board.layout.all_coordinates()
+    let coords_and_neighbors = layout.all_coordinates()
         .filter_map(|coord| {
             match board[coord] {
                 Square::Ship(Ship::VerticalMiddle) => Some((
@@ -30,7 +31,7 @@ pub fn surround_middle_with_ships(board: &mut Board, changed: &mut bool) {
         for neighbor in neighbors.into_iter() {
             // panic if neighbor_coord is out of bounds, because it means there's no space on the board
             // to place the end. 
-            let neighbor_coord = board.layout.coord_for_neighbor(coord, *neighbor).unwrap();
+            let neighbor_coord = coord.neighbor(*neighbor).unwrap();
 
             if !board[neighbor_coord].is_ship() {
                 board.set(neighbor_coord, Square::Ship(Ship::Any), changed);

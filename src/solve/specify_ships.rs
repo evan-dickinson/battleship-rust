@@ -7,7 +7,8 @@ use crate::board::*;
 use crate::neighbor::*;
 
 pub fn refine_any_ship_to_specific_ship(board: &mut Board, changed: &mut bool) {
-    for coord in board.layout.all_coordinates() {
+    let layout = board.layout;
+    for coord in layout.all_coordinates() {
         if board[coord] != Square::Ship(Ship::Any) {
             continue;
         }
@@ -27,14 +28,14 @@ pub fn refine_any_ship_to_specific_ship(board: &mut Board, changed: &mut bool) {
                 // populated with ships. We don't want to set (0, 0) to the right end of a ship --
                 // there's nowhere for the left end to go.
                 let ship_neighbors_ok = ship_neighbors.into_iter()
-                    .all(|&neighbor| match board.layout.coord_for_neighbor(coord, neighbor) {
+                    .all(|&neighbor| match coord.neighbor(neighbor) {
                         Some(neighbor_coord) => board[neighbor_coord].is_ship(),
                         None                 => false, // out of bounds
                     });
 
                 // Check that water neighbors are either out of bounds or set to water
                 let water_neighbors_ok = water_neighbors.into_iter()
-                    .filter_map(|neighbor| board.layout.coord_for_neighbor(coord, neighbor))
+                    .filter_map(|neighbor| coord.neighbor(neighbor))
                     .all(|water_coord| board[water_coord] == Square::Water);
 
                 if ship_neighbors_ok && water_neighbors_ok {

@@ -160,7 +160,7 @@ impl Board {
 
     // In the given row/col, replace all Unknown squares with the specified value
     pub fn replace_unknown(&mut self, row_or_col: RowOrCol, new_value: Square, changed: &mut bool) {
-        for coord in self.layout.coords_for(row_or_col) {
+        for coord in row_or_col.coords() {
             if self[coord] == Square::Unknown {
                 self.set(coord, new_value, changed);
             }
@@ -228,7 +228,7 @@ impl Board {
     }
 }
 
-impl Index<Coord> for Board {
+impl<'a> Index<Coord<'a>> for Board {
     type Output = Square;
 
     fn index(&self, index : Coord) -> &Square {
@@ -249,21 +249,22 @@ mod test {
 	        "0|   ",
 	        "1|~  ",
 	    ]);
+        let layout = board.layout;
 
 	    let mut changed = false;
 
 	    // Setting an unchanged square leaves changed alone
-	    let coord = Coord { row_num: 1, col_num: 0};
+	    let coord = layout.coord(0, 1);
 	    board.set(coord, Square::Water, &mut changed);
 	    assert_eq!(changed, false);
 
 	    // Setting a changed square sets changed
-	    let coord = Coord { row_num: 0, col_num: 0};
+	    let coord = layout.coord(0, 0);
 	    board.set(coord, Square::Water, &mut changed);
 	    assert_eq!(changed, true);
 
 	    // Once changed is true, don't set it back to false
-	    let coord = Coord { row_num: 0, col_num: 0};
+	    let coord = layout.coord(0, 0);
 	    board.set(coord, Square::Water, &mut changed);
 	    assert_eq!(changed, true);
 	}
@@ -283,40 +284,35 @@ mod test {
     #[test]
     fn it_accesses_with_index() {
         let mut board = make_test_board();
-        let coord1 = Coord {
-            row_num: 1,
-            col_num: 0,
-        };
+        let layout = board.layout;
+
+        let coord1 = layout.coord(0, 1);
 
         assert_eq!(board[coord1], Square::Unknown);
+        
         let mut _changed = false;
         board.set(coord1, Square::Water, &mut _changed);
+        
         assert_eq!(board[coord1], Square::Water);
 
-        let coord2 = Coord {
-            row_num: 1,
-            col_num: 3,
-        };
-
+        let coord2 = layout.coord(3, 1);
         assert_eq!(board[coord2], Square::Water);
     }
 
+    // TODO: This test should move to layout
     #[test]
     fn it_accesses_col() {
         let board = make_test_board();
-        let mut coords = board.layout.coords_for(RowOrCol {
-            axis:  Axis::Col,
-            index: 1
-        });
+        // col1 needs to be its own variable, for lifetime reasons
+        let col1 = board.layout.col(1);
+        let mut coords = col1.coords();
 
-        assert_eq!(coords.next(), Some(Coord {
-            row_num: 0,
-            col_num: 1,
-        }));
-        assert_eq!(coords.next(), Some(Coord {
-            row_num: 1,
-            col_num: 1,
-        }));
+        let expected_coord = board.layout.coord(1, 0);
+        assert_eq!(coords.next(), Some(expected_coord));
+
+        let expected_coord = board.layout.coord(1, 1);
+        assert_eq!(coords.next(), Some(expected_coord));
+
         assert_eq!(coords.next(), None);
     }
 
@@ -324,63 +320,46 @@ mod test {
     fn it_counts_ships_remaining() {
         let board = make_test_board();
 
-        assert_eq!(board.ships_remaining(
-            RowOrCol { 
-                axis:  Axis::Row,
-                index: 0
-            }), 1);
-        assert_eq!(board.ships_remaining(
-            RowOrCol { 
-                axis:  Axis::Row,
-                index: 1
-            }), 2);
-        assert_eq!(board.ships_remaining(
-            RowOrCol { 
-                axis:  Axis::Col,
-                index: 0
-            }), 1);
-        assert_eq!(board.ships_remaining(
-            RowOrCol { 
-                axis:  Axis::Col,
-                index: 2
-            }), 0);     
+        let row0 = board.layout.row(0);
+        let row1 = board.layout.row(1);
+        let col0 = board.layout.col(0);
+        let col2 = board.layout.col(2);
+
+        assert_eq!(board.ships_remaining(row0), 1);
+        assert_eq!(board.ships_remaining(row1), 2);
+        assert_eq!(board.ships_remaining(col0), 1);
+        assert_eq!(board.ships_remaining(col2), 0);     
     }
 
     #[test]
     fn it_adjusts_ships_remaining_after_set() {
         let mut board = make_test_board();
-        let coord = Coord {
-            row_num: 1,
-            col_num: 0,
-        };
+        let layout = board.layout;
+        let coord = layout.coord(0, 1);
 
-        assert_eq!(board.ships_remaining(
-            RowOrCol { 
-                axis:  Axis::Row,
-                index: coord.row_num
-            }), 2);
-        assert_eq!(board.ships_remaining(
-            RowOrCol { 
-                axis:  Axis::Col,
-                index: coord.col_num
-            }), 1);
+        assert_eq!(
+            board.ships_remaining(layout.row(coord.row_num)),
+            2);
 
-        let mut _changed = false;
-        board.set(coord, Square::Ship(Ship::Any), &mut _changed);
+        assert_eq!(
+            board.ships_remaining(layout.col(coord.col_num)),
+            1);
+
+        let mut changed = false;
+        board.set(coord, Square::Ship(Ship::Any), &mut changed);
 
         // ships remaining has decreased
-        assert_eq!(board.ships_remaining(
-            RowOrCol { 
-                axis:  Axis::Row,
-                index: coord.row_num
-            }), 2 - 1);
-        assert_eq!(board.ships_remaining(
-            RowOrCol { 
-                axis:  Axis::Col,
-                index: coord.col_num
-            }), 1 - 1);     
+        assert_eq!(
+            board.ships_remaining(layout.row(coord.row_num)),
+            2 - 1);
+        assert_eq!(
+            board.ships_remaining(layout.col(coord.col_num)),
+            1 - 1);
+
+        assert_eq!(changed, true);
     }
 
+    // TODO: This test should move to layout
     #[test]
     fn it_accesses_col_contents() {
         let board = Board::new(&vec![
@@ -390,41 +369,26 @@ mod test {
             "0| v ",
             "0| ~ ",
         ]);
+        let layout = board.layout;
 
-        let col = RowOrCol {
-            axis:  Axis::Col,
-            index: 1,
-        };
-
-        let mut col_coords = board.layout.coords_for(col);
+        let col = layout.col(1);
+        let mut col_coords = col.coords();
 
         let mut expected_coord;
 
-        expected_coord = Coord{
-            row_num: 0,
-            col_num: 1,
-        };
+        expected_coord = layout.coord(1, 0);
         assert_eq!(col_coords.next(), Some(expected_coord));
         assert_eq!(board[expected_coord], Square::Ship(Ship::TopEnd));
 
-        expected_coord = Coord{
-            row_num: 1,
-            col_num: 1,
-        };
+        expected_coord = layout.coord(1, 1);
         assert_eq!(col_coords.next(), Some(expected_coord));
         assert_eq!(board[expected_coord], Square::Ship(Ship::VerticalMiddle));
 
-        expected_coord = Coord{
-            row_num: 2,
-            col_num: 1,
-        };
+        expected_coord = layout.coord(1, 2);
         assert_eq!(col_coords.next(), Some(expected_coord));
         assert_eq!(board[expected_coord], Square::Ship(Ship::BottomEnd));
 
-        expected_coord = Coord{
-            row_num: 3,
-            col_num: 1,
-        };
+        expected_coord = layout.coord(1, 3);
         assert_eq!(col_coords.next(), Some(expected_coord));
         assert_eq!(board[expected_coord], Square::Water);
 
@@ -449,35 +413,37 @@ mod test_find_ships {
         ]);    
 
         // Find vertical ship
-        let coord = Coord { row_num: 0, col_num: 2 };
+        let coord = board.layout.coord(2, 0);
         let found_ship = board.ship_exists_at_coord(
             /* size */ 4, coord, Axis::Row
             );
         assert_eq!(found_ship, true);
 
         // Find horizontal ship
-        let coord = Coord { row_num: 5, col_num: 0 };
+        let coord = board.layout.coord(0, 5);
         let found_ship = board.ship_exists_at_coord(
             /* size */ 2, coord, Axis::Col
             );
         assert_eq!(found_ship, true);        
 
         // Finds dot
-        let coord = Coord { row_num: 2, col_num: 0 };
+        let coord = board.layout.coord(0, 2);
         let found_ship = board.ship_exists_at_coord(
             /* size */ 1, coord, Axis::Row
             );
         assert_eq!(found_ship, true);        
 
         // Does not match when size < ship size
-        let coord = Coord { row_num: 0, col_num: 2 };
+        let coord = board.layout.coord(2, 0);
         let found_ship = board.ship_exists_at_coord(
             /* size */ 3, coord, Axis::Row
             );
         assert_eq!(found_ship, false);
 
-        // Does not match when size > ship size
-        let coord = Coord { row_num: 0, col_num: 2 };
+        // Does not match when size > ship size.
+        // We ask for a ship of size 3, but the ship 
+        // has size 4.
+        let coord = board.layout.coord(2, 0);
         let found_ship = board.ship_exists_at_coord(
             /* size */ 5, coord, Axis::Row
             );

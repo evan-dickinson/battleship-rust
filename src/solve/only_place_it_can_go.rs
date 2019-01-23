@@ -22,7 +22,8 @@ pub fn find_only_place_for_ships(board: &mut Board, changed : &mut bool) {
 }
 
 fn find_only_place_for_ship(board: &mut Board, ship_size: usize, num_ships: usize, changed: &mut bool) {
-    let placements = board.layout.possible_coords_for_ship(ship_size)
+    let layout = board.layout;
+    let placements = layout.possible_coords_for_ship(ship_size)
         .filter_map(|(coord, incrementing_axis)| {
             let constant_axis = incrementing_axis.cross_axis();
 
@@ -58,14 +59,12 @@ fn find_only_place_for_ship(board: &mut Board, ship_size: usize, num_ships: usiz
         // Also handle cases where there are two ships that need to be placed, and also two gaps where
         // ships can go.
 
-        let layout = board.layout;
-
         // For each placement, create a HashSet of coordinates in that placement
         let coordinates_for_all_placements = placements.iter().map(|(coord, incrementing_axis)| {
             // Collect coordinates for the current placement
-            (0..ship_size).map(|square_idx| {
-                layout.offset(*coord, square_idx, *incrementing_axis).unwrap()
-            }).collect::<HashSet<_>>()
+            (0..ship_size)
+                .map(|square_idx| coord.offset(square_idx, *incrementing_axis).unwrap() )
+                .collect::<HashSet<_>>()
         }).collect::<Vec<_>>();
 
         let partitioned_coordinates = partition(coordinates_for_all_placements);
@@ -79,13 +78,13 @@ fn find_only_place_for_ship(board: &mut Board, ship_size: usize, num_ships: usiz
 // After determining we can place a ship here, place it.
 fn place_ship_at_coord(board: &mut Board, ship_size: usize, coord: Coord, incrementing_axis: Axis, changed: &mut bool) {
     for square_idx in 0..ship_size {
-        let coord = board.layout.offset(coord, square_idx, incrementing_axis).unwrap();
+        let coord = coord.offset(square_idx, incrementing_axis).unwrap();
         let new_value = Square::Ship(Ship::expected_square_for_ship(ship_size, square_idx, incrementing_axis));
         board.set(coord, new_value, changed);
     }
 }
 
-fn place_ship_at_intersection_of_coords(board: &mut Board, coordinates_for_all_placements: &mut impl Iterator<Item = HashSet<Coord>>, 
+fn place_ship_at_intersection_of_coords<'a>(board: &mut Board, coordinates_for_all_placements: &mut impl Iterator<Item = HashSet<Coord<'a>>>, 
     changed: &mut bool) {
 
     for coords in coordinates_for_all_placements {
@@ -101,10 +100,7 @@ fn place_ship_at_intersection_of_coords(board: &mut Board, coordinates_for_all_p
 // constant axis: The one that remains the same as we increment through coordinats
 // incrementing axis: The one that changes as we increment through coordinates
 fn enough_free_ships_on_constant_axis(board: &Board, ship_size: usize, coord: Coord, constant_axis: Axis, num_ship_squares: usize) -> bool {
-    let row_or_col = RowOrCol {
-        axis:  constant_axis,
-        index: coord.index_for_axis(constant_axis),
-    };  
+    let row_or_col = coord.row_or_col(constant_axis);
     let ships_remaining = board.ships_remaining(row_or_col);
 
     ships_remaining >= ship_size - num_ship_squares
@@ -113,7 +109,7 @@ fn enough_free_ships_on_constant_axis(board: &Board, ship_size: usize, coord: Co
 // In the incrementing axis, need to have one ship remaining per square
 fn enough_free_ships_on_incrementing_axis(board: &Board, ship_size: usize, coord: Coord, incrementing_axis: Axis) -> bool {
     for square_idx in 0..ship_size {
-        if let Some(coord) = board.layout.offset(coord, square_idx, incrementing_axis) {
+        if let Some(coord) = coord.offset(square_idx, incrementing_axis) {
             let row_or_col = coord.row_or_col(incrementing_axis);
             let ships_remaining = board.ships_remaining(row_or_col);
             if ships_remaining < 1 && !board[coord].is_ship() {
@@ -207,7 +203,7 @@ fn would_ship_at_coord_be_clear_of_other_ships(board: &Board, ship_size: usize, 
             if *is_used { Some(neighbors) } else { None }
         )
         .flatten()
-        .filter_map(|&neighbor| board.layout.coord_for_neighbor(curr_coord, neighbor))
+        .filter_map(|&neighbor| curr_coord.neighbor(neighbor))
         .all(|neighbor_coord| !board[neighbor_coord].is_ship() )
     })
 }
@@ -218,7 +214,7 @@ fn would_ship_at_coord_be_clear_of_other_ships(board: &Board, ship_size: usize, 
 //         coordinates in common (i.e., non-empty intersections) are grouped together into
 //         sets of sets.
 // TODO: Can this be rewritten to take impl Iterator instead?
-fn partition<T : Eq + Hash + Clone>(unpartitioned: Vec<HashSet<T>>) -> Vec<HashSet<T>> {
+fn partition<T: Eq + Hash + Clone>(unpartitioned: Vec<HashSet<T>>) -> Vec<HashSet<T>> {
     let mut partitioned = Vec::new();
     let mut unpartitioned_iter = unpartitioned.into_iter();
 
@@ -372,17 +368,17 @@ mod test_only_place_it_can_go {
         ]);
 
         // Enough space - No existing ships
-        let coord = Coord { row_num: 0, col_num: 0 };
+        let coord = board.layout.coord(0, 0);
         let result = enough_free_ships_on_constant_axis(&board, 3, coord, Axis::Row, 0);
         assert_eq!(result, true);
 
         // Enough space - Includes an existing ships
-        let coord = Coord { row_num: 2, col_num: 0 };
+        let coord = board.layout.coord(0, 2);
         let result = enough_free_ships_on_constant_axis(&board, 3, coord, Axis::Row, 1);
         assert_eq!(result, true);    
 
         // Not enough space
-        let coord = Coord { row_num: 0, col_num: 0 };
+        let coord = board.layout.coord(0, 0);
         let result = enough_free_ships_on_constant_axis(&board, 4, coord, Axis::Row, 0);
         assert_eq!(result, false);   
     }
@@ -395,12 +391,12 @@ mod test_only_place_it_can_go {
         ]);
 
         // Enough space - No existing ships
-        let coord = Coord { row_num: 0, col_num: 0 };
+        let coord = board.layout.coord(0, 0);
         let result = enough_free_ships_on_incrementing_axis(&board, 3, coord, Axis::Col);
         assert_eq!(result, true);
 
         // Not enough space
-        let coord = Coord { row_num: 0, col_num: 0 };       
+        let coord = board.layout.coord(0, 0);
         let result = enough_free_ships_on_incrementing_axis(&board, 4, coord, Axis::Col);
         assert_eq!(result, false);
 
@@ -410,10 +406,9 @@ mod test_only_place_it_can_go {
         ]);   
 
         // Enough space - Includes an existing ship
-        let coord = Coord { row_num: 0, col_num: 0 };
+        let coord = board.layout.coord(0, 0);
         let result = enough_free_ships_on_incrementing_axis(&board, 3, coord, Axis::Col);
-        assert_eq!(result, true);         
-
+        assert_eq!(result, true);
     }    
 
     #[test]
@@ -427,17 +422,17 @@ mod test_only_place_it_can_go {
         ]);    
 
         // Ship here would not touch another ship
-        let coord = Coord { row_num: 0, col_num: 0};
+        let coord = board.layout.coord(0, 0);
         let result = would_ship_at_coord_be_clear_of_other_ships(&board, 3, coord, Axis::Col);
         assert_eq!(result, true);
 
         // Ship here would diagonally touch the '<' at (0, 2)
-        let coord = Coord { row_num: 0, col_num: 1};
+        let coord = board.layout.coord(1, 0);
         let result = would_ship_at_coord_be_clear_of_other_ships(&board, 2, coord, Axis::Row);
         assert_eq!(result, false);
 
         // Ship here would touch the '*' at (3, 2)
-        let coord = Coord { row_num: 0, col_num: 3};
+        let coord = board.layout.coord(3, 0);
         let result = would_ship_at_coord_be_clear_of_other_ships(&board, 2, coord, Axis::Row);
         assert_eq!(result, false);
     }
@@ -454,27 +449,27 @@ mod test_only_place_it_can_go {
         ]);     
 
         // Can place it: All squares empty (non-dot ship)
-        let coord = Coord { row_num: 0, col_num: 0 };
+        let coord = board.layout.coord(0, 0);
         let result = can_fit_ship_at_coord(&board, 3, coord, Axis::Col);
         assert_eq!(result, Some(0));
 
         // Can place it: All squares empty (dot ship)
-        let coord = Coord { row_num: 0, col_num: 2 };
+        let coord = board.layout.coord(2, 0);
         let result = can_fit_ship_at_coord(&board, 1, coord, Axis::Col);
         assert_eq!(result, Some(0));    
 
         // Cannot place it: Water in the way
-        let coord = Coord { row_num: 1, col_num: 0 };
+        let coord = board.layout.coord(0, 1);
         let result = can_fit_ship_at_coord(&board, 3, coord, Axis::Col);
         assert_eq!(result, None);
 
         // Can place it: Existing ships have the correct type
-        let coord = Coord { row_num: 1, col_num: 3 };
+        let coord = board.layout.coord(3, 1);
         let result = can_fit_ship_at_coord(&board, 3, coord, Axis::Row);
         assert_eq!(result, Some(2));
 
         // Cannot place it: Existing ship has the wrong type
-        let coord = Coord { row_num: 2, col_num: 0 };
+        let coord = board.layout.coord(0, 2);
         let result = can_fit_ship_at_coord(&board, 1, coord, Axis::Row);
         assert_eq!(result, None);           
     }
@@ -487,7 +482,7 @@ mod test_only_place_it_can_go {
         ]);
 
         // Cannot place it: The entire ship is present
-        let coord = Coord { row_num: 0, col_num: 0 };
+        let coord = board.layout.coord(0, 0);
         let result = can_fit_ship_at_coord(&board, 4, coord, Axis::Col);
         assert_eq!(result, None);
     }
@@ -501,9 +496,10 @@ mod test_only_place_it_can_go {
             "0|• *",
             "0|  v",
         ]);        
+        let layout = board.layout;
 
         let mut changed = false;
-        let coord = Coord { row_num: 0, col_num: 2 };
+        let coord = layout.coord(2, 0);
         place_ship_at_coord(&mut board, 4,  coord, Axis::Row, &mut changed);
 
         assert_eq!(true, changed);
