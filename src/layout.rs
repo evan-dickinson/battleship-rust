@@ -68,7 +68,6 @@ pub struct Layout {
 }
 
 impl Layout {
-
     // Return the coord that is the result of moving the eisting coord by `offset` sqares, in the given axis
     pub fn offset(&self, coord: Coord, offset: usize, axis: Axis) -> Option<Coord> {
         let new_coord = match axis {
@@ -184,18 +183,6 @@ impl Layout {
             None
         }        
     }
-
-    pub fn coords_for_neighbors<'a>(&'a self, 
-            index: Coord, 
-            neighbors: impl IntoIterator<Item = &'a Neighbor> + 'a)
-        -> impl Iterator<Item = Coord> + 'a
-        {
-
-        neighbors.into_iter()
-            .filter_map(move |neighbor| {
-                self.coord_for_neighbor(index, *neighbor)
-            })
-    }    
 
     // Given a starting point for a ship, iterate over the coordinates that make up the squares of that ship.
     //

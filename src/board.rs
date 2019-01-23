@@ -161,12 +161,6 @@ impl Board {
         *changed = true;
     }
 
-    pub fn set_bulk(&mut self, indexes: &mut Iterator<Item = Coord>, value : Square, changed: &mut bool) {
-        indexes.for_each(|index| {
-            self.set(index, value, changed);
-        });
-    }
-
     // In the given row/col, replace all Unknown squares with the specified value
     pub fn replace_unknown(&mut self, row_or_col: RowOrCol, new_value: Square, changed: &mut bool) {
         for coord in self.layout.coordinates(row_or_col) {

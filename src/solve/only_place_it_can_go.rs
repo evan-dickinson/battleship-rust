@@ -206,13 +206,9 @@ fn would_ship_at_coord_be_clear_of_other_ships(board: &Board, ship_size: usize, 
             // is_used means "do we want to check these neighbors"
             if *is_used { Some(neighbors) } else { None }
         )
-        .all(|neighbors| {
-            board.layout
-            .coords_for_neighbors(curr_coord, neighbors)
-            .all(|neighbor_coord| {
-                !board[neighbor_coord].is_ship()
-            })
-        })
+        .flatten()
+        .filter_map(|&neighbor| board.layout.coord_for_neighbor(curr_coord, neighbor))
+        .all(|neighbor_coord| !board[neighbor_coord].is_ship() )
     })
 }
 

@@ -13,13 +13,14 @@ pub fn specify_middle(board: &mut Board, changed: &mut bool) {
         .collect::<SmallVec<[_; 32]>>();
 
     for coord in coords {
-    	let vert_neighbors = [Neighbor::N, Neighbor::S];
-    	let is_surrounded_vert = layout.coords_for_neighbors(coord, vert_neighbors.iter())
+    	// TODO: Shouldn't this be .any() not .all()
+    	let is_surrounded_vert = [Neighbor::N, Neighbor::S].into_iter()
+    		.filter_map(|&neighbor| board.layout.coord_for_neighbor(coord, neighbor))
     		.all(|coord| board[coord] == Square::Water);
 
-    	let horz_neighbors = [Neighbor::E, Neighbor::W];
-    	let is_surrounded_horz = layout.coords_for_neighbors(coord, horz_neighbors.iter())
-    		.all(|coord| board[coord] == Square::Water);    
+    	let is_surrounded_horz = [Neighbor::E, Neighbor::W].into_iter()
+    		.filter_map(|&neighbor| board.layout.coord_for_neighbor(coord, neighbor))
+    		.all(|coord| board[coord] == Square::Water);
 
     	assert_eq!(is_surrounded_vert && is_surrounded_horz, false);
 

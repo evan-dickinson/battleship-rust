@@ -12,11 +12,9 @@ use crate::layout::*;
 
 // Return true if all neighbors are either water or they are out of bounds
 fn is_water_or_out_of_bounds<'a>(board: &'a Board, index: Coord, neighbors: impl IntoIterator<Item = &'a Neighbor> + 'a) -> bool {
-    let mut neighbor_coords = board.layout.coords_for_neighbors(index, neighbors);
-
-    // coords_for_neighbors filterd out coords that are out of bounds. 
-    // Now check to see that all remaining neighbors are water.
-    return neighbor_coords.all(|coord| board[coord] == Square::Water);
+    neighbors.into_iter()
+    	.filter_map(|&neighbor| board.layout.coord_for_neighbor(index, neighbor))
+    	.all(|coord| board[coord] == Square::Water)
 }
 
 // Return true if all neighbors are in bounds and they are all ships

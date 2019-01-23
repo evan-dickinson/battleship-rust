@@ -7,22 +7,23 @@ use crate::board::*;
 
 pub fn surround_ships_with_water(board: &mut Board, changed: &mut bool) {
     let layout = board.layout;
-    let coords_and_types = layout.all_coordinates()
+    let coords = layout.all_coordinates()
         .filter_map(|coord| { 
-            if let Square::Ship(ship_type) = board[coord] {
-                Some( (coord, ship_type) )
-            }
-            else {
-                None
+            match board[coord] {
+                Square::Ship(ship_type) => Some((coord, ship_type)),
+                _                       => None,
             }
         })
+        .map(|(coord, ship_type)| {
+            ship_type.water_neighbors()
+                .into_iter()
+                .filter_map(move |neighbor| layout.coord_for_neighbor(coord, neighbor))
+        })
+        .flatten()
         .collect::<Vec<_>>();
 
-    for (coord, ship_type) in coords_and_types {
-        let neighbors = ship_type.water_neighbors();
-
-        let mut neighbor_coords = layout.coords_for_neighbors(coord, neighbors.iter());
-        board.set_bulk(&mut neighbor_coords, Square::Water, changed);
+    for coord in coords {
+        board.set(coord, Square::Water, changed);
     }
 }
 
