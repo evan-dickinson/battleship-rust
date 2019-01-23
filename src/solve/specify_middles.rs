@@ -13,14 +13,13 @@ pub fn specify_middle(board: &mut Board, changed: &mut bool) {
         .collect::<SmallVec<[_; 32]>>();
 
     for coord in coords {
-    	// TODO: Shouldn't this be .any() not .all()
     	let is_surrounded_vert = [Neighbor::N, Neighbor::S].into_iter()
     		.filter_map(|&neighbor| board.layout.coord_for_neighbor(coord, neighbor))
-    		.all(|coord| board[coord] == Square::Water);
+    		.any(|coord| board[coord] == Square::Water);
 
     	let is_surrounded_horz = [Neighbor::E, Neighbor::W].into_iter()
     		.filter_map(|&neighbor| board.layout.coord_for_neighbor(coord, neighbor))
-    		.all(|coord| board[coord] == Square::Water);
+    		.any(|coord| board[coord] == Square::Water);
 
     	assert_eq!(is_surrounded_vert && is_surrounded_horz, false);
 
@@ -63,6 +62,22 @@ mod test {
 	        "1|     ", 
 	    ]);
 	}
+
+	#[test]
+	fn it_specifies_vertical_middle_with_water_on_one_side() {
+	    do_test(vec![
+	        "  00200",
+	        "1|     ",
+	        "0| ~☐  ",
+	        "1|     ",
+	    ],
+		vec![
+	        "  00200",
+	        "1|     ",
+	        "0| ~|  ",
+	        "1|     ", 
+	    ]);
+	}	
 
 	#[test]
 	fn it_specifies_vertical_middle_at_edge_of_board() {
