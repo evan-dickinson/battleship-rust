@@ -30,7 +30,7 @@ pub fn solve(board : &mut Board) {
         fill_with_ships,
         surround_ships_with_water,
         place_ships_next_to_ends,
-        specify_ships,
+        refine_any_ship_to_specific_ship,
         find_only_place_for_ships,
         specify_middle,
         surround_middle_with_ships,

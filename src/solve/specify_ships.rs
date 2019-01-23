@@ -5,58 +5,55 @@
 use crate::square::*;
 use crate::board::*;
 use crate::neighbor::*;
-use crate::layout::*;
 
-// Return true if all neighbors are either water or they are out of bounds
-fn is_water_or_out_of_bounds<'a>(board: &'a Board, index: Coord, neighbors: impl IntoIterator<Item = &'a Neighbor> + 'a) -> bool {
-    neighbors.into_iter()
-        .filter_map(|&neighbor| board.layout.coord_for_neighbor(index, neighbor))
-        .all(|coord| board[coord] == Square::Water)
-}
-
-// Return true if all neighbors are in bounds and they are all ships
-fn is_ship<'a>(board: &'a Board, index: Coord, neighbors: impl IntoIterator<Item = &'a Neighbor> + 'a) -> bool {
-    // Can't use layout.coords_for_neighbors here because that filters out neigbors that are out of bounds
-
-    neighbors.into_iter()
-        .all(|&neighbor| {
-            match board.layout.coord_for_neighbor(index, neighbor) {
-                Some(coord) => board[coord].is_ship(),
-                None        => false,
-            }
-        })
-}
-
-pub fn specify_ships(board: &mut Board, changed: &mut bool) {
-    let layout = board.layout;
-    let ship_coords = {
-        layout.all_coordinates()
-            .filter(|coord| { board[*coord] == Square::Ship(Ship::Any) })
-            .collect::<Vec<_>>()
-    };
-
-    for coord in ship_coords {
-        // Find the ship type that will update the most neighboring squares
-        let mut neighbor_count: usize = 0;
-        let mut new_value = None;
-
-        for ship_type in Ship::all() {
-            let all_neighbors = Neighbor::all_neighbors();
-            let water_neighbors = ship_type.water_neighbors();
-            let non_water_neighbors = all_neighbors.difference(&water_neighbors);
-
-            if is_water_or_out_of_bounds(board, coord, water_neighbors.iter()) &&
-               is_ship(board, coord, non_water_neighbors) &&
-               water_neighbors.len() > neighbor_count {
-
-                new_value = Some(ship_type);
-                neighbor_count = water_neighbors.len();
-            }
+pub fn refine_any_ship_to_specific_ship(board: &mut Board, changed: &mut bool) {
+    for coord in board.layout.all_coordinates() {
+        if board[coord] != Square::Ship(Ship::Any) {
+            continue;
         }
 
-        if let Some(ship_type) = new_value {
+        // Find the ship type (if any) that's the best fit for this coord
+        let best_ship_type = Ship::all()
+            .filter_map(|ship_type| {
+                let all_neighbors = Neighbor::all_neighbors();
+                let water_neighbors = ship_type.water_neighbors();
+                let ship_neighbors = all_neighbors.difference(&water_neighbors);
+
+                // Check ship_neighbors. Ensure they're both ships and in-bounds.
+                // Can't use layout.coords_for_neighbors here because that filters out 
+                // neigbors that are out of bounds.
+                //
+                // Ship neighbors need to be in bounds because those squares need to be
+                // populated with ships. We don't want to set (0, 0) to the right end of a ship --
+                // there's nowhere for the left end to go.
+                let ship_neighbors_ok = ship_neighbors.into_iter()
+                    .all(|&neighbor| match board.layout.coord_for_neighbor(coord, neighbor) {
+                        Some(neighbor_coord) => board[neighbor_coord].is_ship(),
+                        None                 => false, // out of bounds
+                    });
+
+                // Check that water neighbors are either out of bounds or set to water
+                let water_neighbors_ok = water_neighbors.into_iter()
+                    .filter_map(|neighbor| board.layout.coord_for_neighbor(coord, neighbor))
+                    .all(|water_coord| board[water_coord] == Square::Water);
+
+                if ship_neighbors_ok && water_neighbors_ok {
+                    Some(ship_type)
+                }
+                else {
+                    None
+                }
+            })
+            .max_by_key(|ship_type| { 
+                // If multiple ship_types match, choose the most specific type.
+                // That's the one that sets the most surrounding squares to water.
+                // Example: If both Dot and TopEnd match, prefer Dot.
+                ship_type.water_neighbors().len() 
+            });
+
+        if let Some(ship_type) = best_ship_type {
             board.set(coord, Square::Ship(ship_type), changed);
-            assert_eq!(*changed, true);
+            assert_eq!(*changed, true);            
         }
     }
 }
@@ -70,7 +67,7 @@ mod test {
         let expected = after.iter().map(|x| x.to_string()).collect::<Vec<_>>();
 
         let mut _changed = false;
-        specify_ships(&mut board, &mut _changed);
+        refine_any_ship_to_specific_ship(&mut board, &mut _changed);
         assert_eq!(board.to_strings(), expected);        
     }
 
