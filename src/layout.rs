@@ -12,7 +12,6 @@ pub struct Coord<'a> {
 
 impl<'a> Coord<'a> {
     // Return the row or col of this coord, whichever is specified by the axis
-    // TODO: Add .row() and .col() convenience methods
     pub fn row_or_col(&self, axis : Axis) -> RowOrCol {
         let index = self.index_for_axis(axis);
         self.layout.row_or_col(axis, index)
@@ -222,26 +221,25 @@ impl Layout {
             &[Axis::Row, Axis::Col][..]
         };
 
-        // Make a sequence of iterators. One iterator per axis.
-        // Iterator 1: (_, Row), (_, Row), (_, Row)
-        // Iterator 2: (_, Col), (_, Col), (_, Col)
-        let iterators = axes.into_iter().cloned().map(move |incrementing_axis| {
-            self.all_coordinates()
-            .map(move |origin| (origin, incrementing_axis) )
-            .filter(move |(origin, incrementing_axis)| {
-                self.ship_in_bounds(ship_size, *origin, *incrementing_axis)
-            })
-        });
+        axes.into_iter()
+            .cloned()
+            .map(move |incrementing_axis| {
+                // For each incrementing_axis, produce an iterator that generates
+                // possible origins along that axis.
+                // Iterator 1: (_, Row), (_, Row), (_, Row)
+                // Iterator 2: (_, Col), (_, Col), (_, Col)
 
-        // TODO: Can this be replaced with .flatten()
-        // Chain all the iterators together
-        // Resulting iterator: (_, Row), (_, Row), ... (_, Col), (_, Col), ...
-        iterators.fold(None, |chained_iterators_opt: Option<Box<dyn Iterator<Item = _>>>, curr_iterator| {
-            match chained_iterators_opt {
-                None => Some(Box::new(curr_iterator)),
-                Some(prev_iterators) => Some(Box::new(prev_iterators.chain(curr_iterator)))
-            }
-        }).unwrap()
+                self.all_coordinates()
+                    .filter_map(move |origin| {
+                        if self.ship_in_bounds(ship_size, origin, incrementing_axis) {
+                            Some((origin, incrementing_axis))
+                        }
+                        else {
+                            None
+                        }
+                    })
+            })
+            .flatten()
     }
 
     // Would a ship at the given origin fit in bounds?
