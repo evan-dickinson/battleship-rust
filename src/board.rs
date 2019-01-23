@@ -210,6 +210,7 @@ impl Board {
         }
     }
 
+    // Count how many ships of a given size are found
     fn count_found_ships(&self, ship_size: usize) -> usize {
         self.layout.possible_coords_for_ship(ship_size)
             .filter(move |(coord, incrementing_axis)| {
@@ -218,6 +219,7 @@ impl Board {
             .count()
     }
 
+    // Does a specific ship (size + axis) exist at these coords?
     fn ship_exists_at_coord(&self, ship_size: usize, origin: Coord, incrementing_axis: Axis) -> bool {
         self.layout.coords_in_ship(ship_size, origin, incrementing_axis)
             .enumerate()
