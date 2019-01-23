@@ -6,11 +6,11 @@ pub fn place_ships_next_to_ends(board: &mut Board, changed: &mut bool) {
 	let layout = board.layout;
     for coord in layout.all_coordinates() {
         let neighbor = match board[coord] {
-            Square::Ship(Ship::TopEnd)    => Neighbor::S,
-            Square::Ship(Ship::BottomEnd) => Neighbor::N,
-            Square::Ship(Ship::LeftEnd)   => Neighbor::E,
-            Square::Ship(Ship::RightEnd)  => Neighbor::W,
-            _                             => continue,
+            Square::ShipSquare(ShipSquare::TopEnd)    => Neighbor::S,
+            Square::ShipSquare(ShipSquare::BottomEnd) => Neighbor::N,
+            Square::ShipSquare(ShipSquare::LeftEnd)   => Neighbor::E,
+            Square::ShipSquare(ShipSquare::RightEnd)  => Neighbor::W,
+            _                                         => continue,
         };
 
         // Panic if neighbor is out of bounds. That would mean, for example, that there's the
@@ -18,7 +18,7 @@ pub fn place_ships_next_to_ends(board: &mut Board, changed: &mut bool) {
         // of the ship to go.
         let neighbor_coord = coord.neighbor(neighbor).unwrap();
         if board[neighbor_coord] == Square::Unknown {
-        	board.set(neighbor_coord, Square::Ship(Ship::Any), changed);
+        	board.set(neighbor_coord, Square::ShipSquare(ShipSquare::Any), changed);
         }
     }        
 }

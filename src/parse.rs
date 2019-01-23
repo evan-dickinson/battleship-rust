@@ -417,7 +417,7 @@ mod board_tests {
     	assert_eq!(board.layout.num_rows, 2);
 
         let coord = board.layout.coord(2, 1);
-    	assert_eq!(board[coord], Square::Ship(Ship::Any));
+    	assert_eq!(board[coord], Square::ShipSquare(ShipSquare::Any));
     }
 
     #[test]
@@ -436,7 +436,7 @@ mod board_tests {
     	assert_eq!(board.layout.num_rows, 2);
 
         let coord = board.layout.coord(2, 1);
-    	assert_eq!(board[coord], Square::Ship(Ship::Any));
+    	assert_eq!(board[coord], Square::ShipSquare(ShipSquare::Any));
 
     	assert_eq!(board.ships_to_find_for_size(3), 0);
     	assert_eq!(board.ships_to_find_for_size(2), 1);

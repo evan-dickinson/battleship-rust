@@ -24,7 +24,7 @@ pub fn fill_with_ships(board: &mut Board, changed: &mut bool) {
             .count();
 
         if num_unknown == board.ships_remaining(row_or_col) {
-            board.replace_unknown(row_or_col, Square::Ship(Ship::Any), changed);
+            board.replace_unknown(row_or_col, Square::ShipSquare(ShipSquare::Any), changed);
         }
     }
 }

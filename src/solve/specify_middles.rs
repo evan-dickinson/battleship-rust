@@ -4,13 +4,12 @@ use crate::neighbor::*;
 
 use smallvec::SmallVec;
 
-
 // Convert an AnyMiddle to a specific type of middle, based on
 // whether or not it's surrounded by water.
 pub fn specify_middle(board: &mut Board, changed: &mut bool) {
     let layout = board.layout;
     let coords = layout.all_coordinates()
-        .filter(|&coord| Square::Ship(Ship::AnyMiddle) == board[coord])
+        .filter(|&coord| Square::ShipSquare(ShipSquare::AnyMiddle) == board[coord])
         .collect::<SmallVec<[_; 32]>>();
 
     for coord in coords {
@@ -27,10 +26,10 @@ pub fn specify_middle(board: &mut Board, changed: &mut bool) {
   		// If we're surrounded vertically then this ship must be laid out horizontally,
   		// and vice versa.
     	if is_surrounded_vert {
-    		board.set(coord, Square::Ship(Ship::HorizontalMiddle), changed);
+    		board.set(coord, Square::ShipSquare(ShipSquare::HorizontalMiddle), changed);
     	}
     	else if is_surrounded_horz {
-			board.set(coord, Square::Ship(Ship::VerticalMiddle), changed);
+			board.set(coord, Square::ShipSquare(ShipSquare::VerticalMiddle), changed);
     	}
     }
 }

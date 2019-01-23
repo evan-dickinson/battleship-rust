@@ -9,12 +9,12 @@ use crate::neighbor::*;
 pub fn refine_any_ship_to_specific_ship(board: &mut Board, changed: &mut bool) {
     let layout = board.layout;
     for coord in layout.all_coordinates() {
-        if board[coord] != Square::Ship(Ship::Any) {
+        if board[coord] != Square::ShipSquare(ShipSquare::Any) {
             continue;
         }
 
-        // Find the ship type (if any) that's the best fit for this coord
-        let best_ship_type = Ship::all()
+        // Find the type of ship square (if any) that's the best fit for this coord
+        let best_ship_square = ShipSquare::all()
             .filter_map(|ship_type| {
                 let all_neighbors = Neighbor::all_neighbors();
                 let water_neighbors = ship_type.water_neighbors();
@@ -45,16 +45,16 @@ pub fn refine_any_ship_to_specific_ship(board: &mut Board, changed: &mut bool) {
                     None
                 }
             })
-            .max_by_key(|ship_type| { 
+            .max_by_key(|ship_square| { 
                 // If multiple ship_types match, choose the most specific type.
                 // That's the one that sets the most surrounding squares to water.
                 // Example: If both Dot and TopEnd match, prefer Dot.
-                ship_type.water_neighbors().len() 
+                ship_square.water_neighbors().len() 
             });
 
-        if let Some(ship_type) = best_ship_type {
-            board.set(coord, Square::Ship(ship_type), changed);
-            assert_eq!(*changed, true);            
+        if let Some(ship_square) = best_ship_square {
+            board.set(coord, Square::ShipSquare(ship_square), changed);
+            assert_eq!(*changed, true);
         }
     }
 }

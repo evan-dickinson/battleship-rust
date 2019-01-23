@@ -5,7 +5,7 @@ use crate::layout::*;
 use crate::neighbor::*;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum Ship {
+pub enum ShipSquare {
     Any,
     LeftEnd,
     RightEnd,
@@ -16,10 +16,10 @@ pub enum Ship {
     AnyMiddle,
     Dot // single square
 }
-use self::Ship::*;
+use self::ShipSquare::*;
 
-impl Ship {
-    pub fn all() -> impl Iterator<Item = Ship> {
+impl ShipSquare {
+    pub fn all() -> impl Iterator<Item = Self> {
         [
             Any,
             LeftEnd,
@@ -35,7 +35,9 @@ impl Ship {
 
     // Return the nth square for a ship, along the given axis.
     // For example, a ship of size 3 on horizontal axis, we expect to see LeftEnd, then HorizontalMiddle, then RightEnd
-    pub fn expected_square_for_ship(ship_size: usize, square_idx: usize, incrementing_axis: Axis) -> Ship {
+    //
+    // TODO: Rename to expected_ship_square
+    pub fn expected_square_for_ship(ship_size: usize, square_idx: usize, incrementing_axis: Axis) -> Self {
         use crate::layout::Axis::*;
 
         assert!(square_idx < ship_size);
@@ -96,23 +98,23 @@ impl Ship {
 pub enum Square {
     Unknown,
     Water,
-    Ship(Ship)
+    ShipSquare(ShipSquare)
 }
 use self::Square::*;
 
 impl Square {
     pub fn is_ship(self) -> bool {
         match self {
-            Ship(_) => true,
-            _       => false
+            ShipSquare(_) => true,
+            _             => false
         }
     }
 
     pub fn is_ship_middle(self) -> bool {
         match self {
-            Ship(AnyMiddle)        |
-            Ship(VerticalMiddle)   |
-            Ship(HorizontalMiddle) => true,
+            ShipSquare(AnyMiddle)        |
+            ShipSquare(VerticalMiddle)   |
+            ShipSquare(HorizontalMiddle) => true,
 
             _ => false,            
         }
@@ -122,15 +124,15 @@ impl Square {
         match square_char {
             ' ' => Some(Unknown),
             '~' => Some(Water),
-            '*' => Some(Ship(Any)),
-            '•' => Some(Ship(Dot)),
-            '<' => Some(Ship(LeftEnd)),
-            '>' => Some(Ship(RightEnd)),
-            '^' => Some(Ship(TopEnd)),
-            'v' => Some(Ship(BottomEnd)),
-            '|' => Some(Ship(VerticalMiddle)),
-            '-' => Some(Ship(HorizontalMiddle)),
-            '☐' => Some(Ship(AnyMiddle)),
+            '*' => Some(ShipSquare(Any)),
+            '•' => Some(ShipSquare(Dot)),
+            '<' => Some(ShipSquare(LeftEnd)),
+            '>' => Some(ShipSquare(RightEnd)),
+            '^' => Some(ShipSquare(TopEnd)),
+            'v' => Some(ShipSquare(BottomEnd)),
+            '|' => Some(ShipSquare(VerticalMiddle)),
+            '-' => Some(ShipSquare(HorizontalMiddle)),
+            '☐' => Some(ShipSquare(AnyMiddle)),
             _   => None,
         }
     }
@@ -142,7 +144,7 @@ impl fmt::Display for Square {
             Unknown => ' ',
             Water   => '~',
 
-            Ship(ship_type) => match ship_type {
+            ShipSquare(ship_type) => match ship_type {
                 Any              => '*',
                 Dot              => '•',              
                 LeftEnd          => '<',

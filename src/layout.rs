@@ -162,10 +162,12 @@ impl Layout {
         }
     }
 
+    #[allow(dead_code)] // currently, this is only used in tests
     pub fn row(&self, index: usize) -> RowOrCol {
         self.row_or_col(Axis::Row, index)
     }
 
+    #[allow(dead_code)] // currently, this is only used in tests
     pub fn col(&self, index: usize) -> RowOrCol {
         self.row_or_col(Axis::Col, index)
     }

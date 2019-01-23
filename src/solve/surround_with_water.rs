@@ -10,8 +10,8 @@ pub fn surround_ships_with_water(board: &mut Board, changed: &mut bool) {
     let coords = layout.all_coordinates()
         .filter_map(|coord| { 
             match board[coord] {
-                Square::Ship(ship_type) => Some((coord, ship_type)),
-                _                       => None,
+                Square::ShipSquare(ship_type) => Some((coord, ship_type)),
+                _ => None,
             }
         })
         .map(|(coord, ship_type)| {

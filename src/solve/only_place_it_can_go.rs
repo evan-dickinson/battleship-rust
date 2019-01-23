@@ -79,7 +79,8 @@ fn find_only_place_for_ship(board: &mut Board, ship_size: usize, num_ships: usiz
 fn place_ship_at_coord(board: &mut Board, ship_size: usize, coord: Coord, incrementing_axis: Axis, changed: &mut bool) {
     for square_idx in 0..ship_size {
         let coord = coord.offset(square_idx, incrementing_axis).unwrap();
-        let new_value = Square::Ship(Ship::expected_square_for_ship(ship_size, square_idx, incrementing_axis));
+        let ship_square_type = ShipSquare::expected_square_for_ship(ship_size, square_idx, incrementing_axis);
+        let new_value = Square::ShipSquare(ship_square_type);
         board.set(coord, new_value, changed);
     }
 }
@@ -91,7 +92,7 @@ fn place_ship_at_intersection_of_coords<'a>(board: &mut Board, coordinates_for_a
         // Set coordinates in the intersection
         for coord in coords {
             if board[coord] == Square::Unknown {
-                board.set(coord, Square::Ship(Ship::Any), changed);
+                board.set(coord, Square::ShipSquare(ShipSquare::Any), changed);
             }
         }        
     }
@@ -142,15 +143,15 @@ fn can_fit_ship_at_coord(board: &Board, ship_size: usize, origin: Coord, increme
                 num_ship_squares += 1;
             }
 
-            let expected = Ship::expected_square_for_ship(ship_size, square_idx, incrementing_axis);
+            let expected = ShipSquare::expected_square_for_ship(ship_size, square_idx, incrementing_axis);
             
-            let is_exact_match =  board[curr_coord] == Square::Ship(expected);
+            let is_exact_match =  board[curr_coord] == Square::ShipSquare(expected);
             let is_match = is_exact_match ||
                 board[curr_coord] == Square::Unknown || 
-                board[curr_coord] == Square::Ship(Ship::Any) ||
+                board[curr_coord] == Square::ShipSquare(ShipSquare::Any) ||
                 (
-                    board[curr_coord] == Square::Ship(Ship::AnyMiddle) &&
-                    (expected == Ship::VerticalMiddle || expected == Ship::HorizontalMiddle)
+                    board[curr_coord] == Square::ShipSquare(ShipSquare::AnyMiddle) &&
+                    (expected == ShipSquare::VerticalMiddle || expected == ShipSquare::HorizontalMiddle)
                 );              
 
             all_matches_exact = all_matches_exact && is_exact_match;
@@ -181,14 +182,14 @@ fn would_ship_at_coord_be_clear_of_other_ships(board: &Board, ship_size: usize, 
         let (first_square_neighbors, middle_square_neighbors, last_square_neighbors) =
             match incrementing_axis {
                 Axis::Col => ( // Horizonal ship increments by columns
-                    Ship::LeftEnd.water_neighbors(),
-                    Ship::HorizontalMiddle.water_neighbors(),
-                    Ship::RightEnd.water_neighbors()
+                    ShipSquare::LeftEnd.water_neighbors(),
+                    ShipSquare::HorizontalMiddle.water_neighbors(),
+                    ShipSquare::RightEnd.water_neighbors()
                 ),
                 Axis::Row => ( // Vertical ship increments by rows
-                    Ship::TopEnd.water_neighbors(),
-                    Ship::VerticalMiddle.water_neighbors(),
-                    Ship::BottomEnd.water_neighbors()
+                    ShipSquare::TopEnd.water_neighbors(),
+                    ShipSquare::VerticalMiddle.water_neighbors(),
+                    ShipSquare::BottomEnd.water_neighbors()
                 )
             };
 
@@ -535,7 +536,7 @@ mod test_only_place_it_can_go {
     }
 
     // TESTS:
-    // - We know where the middle of the ship will be but not the ends. Place Ship::Any in the ones that we
+    // - We know where the middle of the ship will be but not the ends. Place ShipSquare::Any in the ones that we
     //   know will have a ship.
 
     #[test]

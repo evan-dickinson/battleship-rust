@@ -14,11 +14,11 @@ pub fn surround_middle_with_ships(board: &mut Board, changed: &mut bool) {
     let coords_and_neighbors = layout.all_coordinates()
         .filter_map(|coord| {
             match board[coord] {
-                Square::Ship(Ship::VerticalMiddle) => Some((
+                Square::ShipSquare(ShipSquare::VerticalMiddle) => Some((
                     coord,
                     [Neighbor::N, Neighbor::S] // Set these neighbors to ships
                 )),
-                Square::Ship(Ship::HorizontalMiddle) => Some((
+                Square::ShipSquare(ShipSquare::HorizontalMiddle) => Some((
                     coord,
                     [Neighbor::E, Neighbor::W]
                 )),
@@ -34,7 +34,7 @@ pub fn surround_middle_with_ships(board: &mut Board, changed: &mut bool) {
             let neighbor_coord = coord.neighbor(*neighbor).unwrap();
 
             if !board[neighbor_coord].is_ship() {
-                board.set(neighbor_coord, Square::Ship(Ship::Any), changed);
+                board.set(neighbor_coord, Square::ShipSquare(ShipSquare::Any), changed);
             }
         }
     }

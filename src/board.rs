@@ -134,13 +134,13 @@ impl Board {
         }
 
         // Check for logic errors. You can only:
-        // - Refine Ship::Any to a more specific kind of ship
-        // - Refine Ship::AnyMiddle to a more specific kind of middle
+        // - Refine ShipSquare::Any to a more specific kind of ship
+        // - Refine ShipSquare::AnyMiddle to a more specific kind of middle
         // - Change Unknown to another value
-        if curr_value == Square::Ship(Ship::Any) {
+        if curr_value == Square::ShipSquare(ShipSquare::Any) {
             assert!(new_value.is_ship());
         }
-        else if curr_value == Square::Ship(Ship::AnyMiddle) {
+        else if curr_value == Square::ShipSquare(ShipSquare::AnyMiddle) {
             assert!(new_value.is_ship_middle());
         }
         else {
@@ -224,8 +224,8 @@ impl Board {
         self.layout.coords_in_ship(ship_size, origin, incrementing_axis)
             .enumerate()
             .all(|(square_idx, curr_coord)| {
-                let expected = Ship::expected_square_for_ship(ship_size, square_idx, incrementing_axis);
-                self[curr_coord] == Square::Ship(expected)                
+                let expected = ShipSquare::expected_square_for_ship(ship_size, square_idx, incrementing_axis);
+                self[curr_coord] == Square::ShipSquare(expected)                
             })
     }
 }
@@ -348,7 +348,7 @@ mod test {
             1);
 
         let mut changed = false;
-        board.set(coord, Square::Ship(Ship::Any), &mut changed);
+        board.set(coord, Square::ShipSquare(ShipSquare::Any), &mut changed);
 
         // ships remaining has decreased
         assert_eq!(
@@ -380,15 +380,15 @@ mod test {
 
         expected_coord = layout.coord(1, 0);
         assert_eq!(col_coords.next(), Some(expected_coord));
-        assert_eq!(board[expected_coord], Square::Ship(Ship::TopEnd));
+        assert_eq!(board[expected_coord], Square::ShipSquare(ShipSquare::TopEnd));
 
         expected_coord = layout.coord(1, 1);
         assert_eq!(col_coords.next(), Some(expected_coord));
-        assert_eq!(board[expected_coord], Square::Ship(Ship::VerticalMiddle));
+        assert_eq!(board[expected_coord], Square::ShipSquare(ShipSquare::VerticalMiddle));
 
         expected_coord = layout.coord(1, 2);
         assert_eq!(col_coords.next(), Some(expected_coord));
-        assert_eq!(board[expected_coord], Square::Ship(Ship::BottomEnd));
+        assert_eq!(board[expected_coord], Square::ShipSquare(ShipSquare::BottomEnd));
 
         expected_coord = layout.coord(1, 3);
         assert_eq!(col_coords.next(), Some(expected_coord));
