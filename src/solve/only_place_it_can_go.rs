@@ -139,7 +139,7 @@ fn can_fit_ship_at_coord(board: &Board, ship_size: usize, origin: Coord, increme
     let mut num_ship_squares = 0;
     let mut all_matches_exact = true;
 
-    let fits = board.layout.squares_in_ship(ship_size, origin, incrementing_axis)
+    let fits = board.layout.coords_in_ship(ship_size, origin, incrementing_axis)
         .enumerate()
         .all(|(square_idx, curr_coord)| {
             if board[curr_coord].is_ship() {
@@ -173,7 +173,7 @@ fn can_fit_ship_at_coord(board: &Board, ship_size: usize, origin: Coord, increme
 // Would placing a ship here cause it to touch another ship?
 // Return: FALSE if it would touch another ship, TRUE if it would not touch.
 fn would_ship_at_coord_be_clear_of_other_ships(board: &Board, ship_size: usize, origin: Coord, incrementing_axis: Axis) -> bool {
-    board.layout.squares_in_ship(ship_size, origin, incrementing_axis)
+    board.layout.coords_in_ship(ship_size, origin, incrementing_axis)
     .enumerate()
     .all(|(square_idx, curr_coord)| {
         let is_first_square  = square_idx == 0;

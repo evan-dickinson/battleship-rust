@@ -186,7 +186,7 @@ impl Layout {
     // Given a starting point for a ship, iterate over the coordinates that make up the squares of that ship.
     //
     // Panics: If the ship is not in bounds
-    pub fn squares_in_ship<'a>(&'a self, ship_size: usize, origin: Coord, incrementing_axis: Axis) -> impl Iterator<Item = Coord> + 'a {
+    pub fn coords_in_ship<'a>(&'a self, ship_size: usize, origin: Coord, incrementing_axis: Axis) -> impl Iterator<Item = Coord> + 'a {
         (0..ship_size).map(move |square_idx| {
             self.offset(origin, square_idx, incrementing_axis).unwrap()
         })

@@ -222,7 +222,7 @@ impl Board {
     }
 
     fn ship_exists_at_coord(&self, ship_size: usize, origin: Coord, incrementing_axis: Axis) -> bool {
-        self.layout.squares_in_ship(ship_size, origin, incrementing_axis)
+        self.layout.coords_in_ship(ship_size, origin, incrementing_axis)
             .enumerate()
             .all(|(square_idx, curr_coord)| {
                 let expected = Ship::expected_square_for_ship(ship_size, square_idx, incrementing_axis);
