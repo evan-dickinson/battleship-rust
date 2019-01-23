@@ -1,5 +1,3 @@
-#![allow(clippy::needless_return)]
-
 use std::ops::Index;
 use std::collections::HashMap;
 
@@ -24,7 +22,7 @@ impl Board {
         let mut text = text_lines.join("\n");
         text.push_str("\n.");
 
-        return parse_board(&text);
+        parse_board(&text)
     }
 
     pub fn new_from_data(squares: Vec<Vec<Square>>, 
@@ -37,13 +35,13 @@ impl Board {
             num_cols: squares[0].len(),            
         };
 
-        return Board {
+        Board {
             squares,
             ships_remaining_for_col,
             ships_remaining_for_row,
             layout,
             ships_to_find
-        };
+        }
     }
 
     /////////////////////////////////////////////////////////////////////
@@ -52,18 +50,16 @@ impl Board {
 
     fn format_col_headers(&self) -> String {
         let prefix = "  ".to_string(); // start the line with two blanks
-        return self.ships_remaining_for_col.iter()
-            .map(|x| {
-                return x.to_string();
-            })
+        self.ships_remaining_for_col.iter()
+            .map(|x| x.to_string() )
             .fold(prefix, |mut acc, x| {
                 acc.push_str(&x);
-                return acc;
-            });
+                acc
+            })
     }
 
     fn format_rows(&self) -> Vec<String> {
-        return self.squares.iter()
+        self.squares.iter()
             .enumerate()
             .map(|(row_num, row)| {
                 let row_count = self.ships_remaining_for_row[row_num];
@@ -73,7 +69,7 @@ impl Board {
 
                 row_text
             })
-            .collect();
+            .collect()
     }
 
     fn format_ships_to_find(&self) -> Option<String> {
@@ -99,7 +95,8 @@ impl Board {
 
         out.push_str(&ship_string);
         out.push('.');
-        return Some(out);
+        
+        Some(out)
     }
 
     pub fn to_strings(&self) -> Vec<String> {
@@ -115,7 +112,7 @@ impl Board {
         let mut other_rows = self.format_rows();
         out.append(&mut other_rows);
 
-        return out;
+        out
     }
 
     pub fn print(&self) {
@@ -176,13 +173,13 @@ impl Board {
 
     // TODO: Should this also ensure that self.remaining_ship_sizes() is empty?
     pub fn is_solved(&self) -> bool {
-        return self.layout.all_coordinates()
-            .all(|coord| self[coord] != Square::Unknown);
+        self.layout.all_coordinates()
+            .all(|coord| self[coord] != Square::Unknown)
     }
 
     // Count number of ships remaining in the given row/col
     pub fn ships_remaining(&self, row_or_col: RowOrCol) -> usize {
-        return match row_or_col.axis {
+        match row_or_col.axis {
             Axis::Row => self.ships_remaining_for_row[row_or_col.index],
             Axis::Col => self.ships_remaining_for_col[row_or_col.index],
         }
@@ -190,7 +187,7 @@ impl Board {
 
     // Enumerate all the sizes of ships that remain to be found
     pub fn remaining_ship_sizes<'a>(&'a self) -> impl Iterator<Item = usize> + 'a {
-        return self.ships_to_find.iter()
+        self.ships_to_find.iter()
             .filter_map(|(&ship_size, &count)|
                 if count > 0 {
                     Some(ship_size)
@@ -198,7 +195,7 @@ impl Board {
                 else {
                     None
                 }
-            );
+            )
     }
 
     // How many ships of a given size remain to be found
@@ -235,7 +232,7 @@ impl Index<Coord> for Board {
     type Output = Square;
 
     fn index(&self, index : Coord) -> &Square {
-        return &self.squares[index.row_num][index.col_num];
+        &self.squares[index.row_num][index.col_num]
     }
 }
 

@@ -2,7 +2,6 @@ use crate::square::*;
 use crate::board::*;
 use crate::neighbor::*;
 
-
 pub fn place_ships_next_to_ends(board: &mut Board, changed: &mut bool) {
     for coord in board.layout.all_coordinates() {
         let neighbor = match board[coord] {

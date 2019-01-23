@@ -58,8 +58,8 @@ impl Ship {
     }    
 
     // For a given ship type, which neigbors should be set to water
-    pub fn water_neighbors(&self) -> HashSet<Neighbor> {
-        match *self {
+    pub fn water_neighbors(self) -> HashSet<Neighbor> {
+        match self {
             Ship::Any       => [
                 Neighbor::NW, Neighbor::NE,
                 Neighbor::SW, Neighbor::SE,
