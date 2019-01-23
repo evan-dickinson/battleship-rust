@@ -18,8 +18,8 @@ pub enum Ship {
 }
 
 impl Ship {
-    pub fn all() -> Vec<Ship> {
-        return vec! [
+    pub fn all() -> impl Iterator<Item = Ship> {
+        [
             Ship::Any,
             Ship::LeftEnd,
             Ship::RightEnd,
@@ -29,12 +29,11 @@ impl Ship {
             Ship::HorizontalMiddle,
             Ship::AnyMiddle,
             Ship::Dot
-        ];
+        ].into_iter().cloned()
     }
 
     // Return the nth square for a ship, along the given axis.
     // For example, a ship of size 3 on horizontal axis, we expect to see LeftEnd, then HorizontalMiddle, then RightEnd
-    #[allow(clippy::collapsible_if)]
     pub fn expected_square_for_ship(ship_size: usize, square_idx: usize, incrementing_axis: Axis) -> Ship {
         assert!(square_idx < ship_size);
 
@@ -42,25 +41,18 @@ impl Ship {
             Ship::Dot
         }
         else {
-            if square_idx == 0 {
-                match incrementing_axis {
-                    // If we're incrementing columns, need to start with a left end.
-                    // If incrementing rows, need to start with a top end.
-                    Axis::Col => Ship::LeftEnd,
-                    Axis::Row => Ship::TopEnd,
-                }
-            }
-            else if square_idx == ship_size - 1 {
-                match incrementing_axis {
-                    Axis::Col => Ship::RightEnd,
-                    Axis::Row => Ship::BottomEnd,
-                }           
-            }
-            else { // middle
-                match incrementing_axis {
-                    Axis::Col => Ship::HorizontalMiddle,
-                    Axis::Row => Ship::VerticalMiddle,
-                }
+            enum Position { Start, Middle, End };
+            let pos = if square_idx == 0             { Position::Start  }
+                else  if square_idx == ship_size - 1 { Position::End    }
+                else                                 { Position::Middle };
+
+            match (pos, incrementing_axis) {
+                (Position::Start,  Axis::Col) => Ship::LeftEnd,
+                (Position::Start,  Axis::Row) => Ship::TopEnd,
+                (Position::Middle, Axis::Col) => Ship::HorizontalMiddle,
+                (Position::Middle, Axis::Row) => Ship::VerticalMiddle,
+                (Position::End,    Axis::Col) => Ship::RightEnd,
+                (Position::End,    Axis::Row) => Ship::BottomEnd,
             }
         }
     }    
