@@ -1,8 +1,3 @@
-// TODO:
-// - Move into its own module
-// - Write tests
-// - Integrate into solve()
-
 use crate::square::*;
 use crate::board::*;
 use crate::neighbor::*;
@@ -30,7 +25,7 @@ pub fn surround_middle_with_ships(board: &mut Board, changed: &mut bool) {
     for (coord, neighbors) in coords_and_neighbors {
         for neighbor in neighbors.into_iter() {
             // panic if neighbor_coord is out of bounds, because it means there's no space on the board
-            // to place the end. 
+            // to place the neighboring ship squares. 
             let neighbor_coord = coord.neighbor(*neighbor).unwrap();
 
             if !board[neighbor_coord].is_ship() {

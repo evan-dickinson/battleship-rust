@@ -9,15 +9,18 @@ pub fn surround_ships_with_water(board: &mut Board, changed: &mut bool) {
     let layout = board.layout;
     let coords = layout.all_coordinates()
         .filter_map(|coord| { 
-            match board[coord] {
-                Square::ShipSquare(ship_type) => Some((coord, ship_type)),
-                _ => None,
+            if let Square::ShipSquare(ship_type) = board[coord] {
+                // Return an iterator of the neighbors of coord that should be
+                // set to water.
+                let iter = ship_type.water_neighbors()
+                    .into_iter()
+                    .filter_map(move |neighbor| coord.neighbor(neighbor));
+
+                Some(iter)
             }
-        })
-        .map(|(coord, ship_type)| {
-            ship_type.water_neighbors()
-                .into_iter()
-                .filter_map(move |neighbor| coord.neighbor(neighbor))
+            else {
+                None
+            }
         })
         .flatten()
         .collect::<Vec<_>>();

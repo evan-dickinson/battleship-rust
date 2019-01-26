@@ -49,12 +49,7 @@ fn find_only_place_for_ship(board: &mut Board, expected_ship: ExpectedShip, num_
         // We know the placement of every square in the ships. Fill in the complete ships.
 
         for ship_head in placements {
-            // TOOD: Need a cleaner way to construct this
-            let ship = Ship {
-                head: ship_head,
-                size: expected_ship.size
-            };
-
+            let ship = ship_head.to_ship(expected_ship);
             place_ship_at_coord(board, ship, changed);
         }
     }

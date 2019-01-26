@@ -232,10 +232,7 @@ impl Board {
     fn count_found_ships(&self, expected_ship: ExpectedShip) -> usize {
         self.layout.possible_heads_for_ship(expected_ship)
             .filter(move |&ship_head| {
-                let ship = Ship {
-                    head: ship_head,
-                    size: expected_ship.size,
-                };
+                let ship = ship_head.to_ship(expected_ship);
                 self.ship_is_found(ship)
             })
             .count()

@@ -33,14 +33,22 @@ pub struct ShipHead<'a> {
     pub incrementing_axis: Axis,
 }
 
+impl<'a> ShipHead<'a> {
+    pub fn to_ship(self, expected_ship: ExpectedShip) -> Ship<'a> {
+        Ship {
+            head: self,
+            size: expected_ship.size
+        }
+    }
+}
+
 #[derive(Clone, Copy, Eq, PartialEq, Debug)]
 pub struct Ship<'a> {
     pub head: ShipHead<'a>,
     pub size: usize,
 }
 
-impl<'a> Ship<'a> {
-    
+impl<'a> Ship<'a> {    
     #[allow(dead_code)] // currently, this is only used in tests    
     pub fn new(origin: Coord<'a>, incrementing_axis: Axis, size: usize) -> Self {
         Ship {
