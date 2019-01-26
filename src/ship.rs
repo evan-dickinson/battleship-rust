@@ -30,6 +30,9 @@ impl From<usize> for ExpectedShip {
 #[derive(Clone, Copy, Eq, PartialEq, Debug)]
 pub struct ShipHead<'a> {
     pub origin: Coord<'a>,
+
+    // constant axis: The one that remains the same as we increment through coordinats
+    // incrementing axis: The one that changes as we increment through coordinates
     pub incrementing_axis: Axis,
 }
 

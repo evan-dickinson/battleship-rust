@@ -13,7 +13,7 @@ pub struct Coord<'a> {
 
 impl<'a> Coord<'a> {
     // Return the row or col of this coord, whichever is specified by the axis
-    pub fn row_or_col(&self, axis : Axis) -> RowOrCol {
+    pub fn row_or_col(&self, axis: Axis) -> RowOrCol {
         let index = self.index_for_axis(axis);
         self.layout.row_or_col(axis, index)
     }
@@ -47,19 +47,19 @@ impl<'a> Coord<'a> {
         let i_num_rows = self.layout.num_rows as isize;
         let i_num_cols = self.layout.num_cols as isize;
 
-        let i_row_num = self.row_num as isize;
-        let i_col_num = self.col_num as isize;
-
-        let (i_row, i_col) : (isize, isize) = match neighbor {
-            Neighbor::N  => (i_row_num - 1, i_col_num),
-            Neighbor::NE => (i_row_num - 1, i_col_num + 1),
-            Neighbor::E  => (i_row_num,     i_col_num + 1),
-            Neighbor::SE => (i_row_num + 1, i_col_num + 1),
-            Neighbor::S  => (i_row_num + 1, i_col_num),
-            Neighbor::SW => (i_row_num + 1, i_col_num - 1),
-            Neighbor::W  => (i_row_num,     i_col_num - 1),
-            Neighbor::NW => (i_row_num - 1, i_col_num - 1),
+        use crate::neighbor::Neighbor::*;
+        let delta_row: isize = match neighbor {
+            N | NE | NW => -1,
+            E | W       =>  0,
+            S | SE | SW =>  1,            
         };
+        let delta_col: isize = match neighbor {
+            W | NW | SW => -1,
+            N | S       =>  0,
+            E | NE | SE =>  1,
+        };
+        let i_row = (self.row_num as isize) + delta_row;
+        let i_col = (self.col_num as isize) + delta_col;
 
         let in_bounds = 
             i_row >= 0         && i_col >= 0 &&

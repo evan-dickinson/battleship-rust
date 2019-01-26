@@ -100,9 +100,7 @@ fn place_ship_at_intersection_of_coords<'a>(board: &mut Board, coordinates_for_a
     }
 }
 
-// constant axis: The one that remains the same as we increment through coordinats
-// incrementing axis: The one that changes as we increment through coordinates
-fn enough_free_ships_on_constant_axis<'a>(board: &Board, ship: Ship<'a>, num_ship_squares: usize) -> bool {
+fn enough_free_ships_on_constant_axis(board: &Board, ship: Ship, num_ship_squares: usize) -> bool {
     let constant_axis = ship.head.incrementing_axis.cross_axis();
     let row_or_col = ship.head.origin.row_or_col(constant_axis);
     let ship_squares_remaining = board.ship_squares_remaining(row_or_col);
@@ -131,7 +129,7 @@ fn enough_free_ships_on_incrementing_axis(board: &Board, ship: Ship) -> bool {
 // None        -- One of the following:
 //                - Ship does not fit here
 //                - Ship is already placed here
-fn can_fit_ship_at_coord<'a>(board: &Board, ship: Ship<'a>) -> Option<usize> {
+fn can_fit_ship_at_coord(board: &Board, ship: Ship) -> Option<usize> {
     let mut num_ship_squares = 0;
     let mut all_matches_exact = true;
 
@@ -146,12 +144,15 @@ fn can_fit_ship_at_coord<'a>(board: &Board, ship: Ship<'a>) -> Option<usize> {
             let expected_square = ship.expected_square_for_idx(square_idx);
             
             let is_exact_match =  board[curr_coord] == Square::ShipSquare(expected_square);
-            let is_match = is_exact_match ||
-                board[curr_coord] == Square::Unknown || 
-                board[curr_coord] == Square::ShipSquare(ShipSquare::Any) ||
-                (
-                    board[curr_coord] == Square::ShipSquare(ShipSquare::AnyMiddle) &&
-                    (expected_square == ShipSquare::VerticalMiddle || expected_square == ShipSquare::HorizontalMiddle)
+            let is_match = is_exact_match
+                || board[curr_coord] == Square::Unknown
+                || board[curr_coord] == Square::ShipSquare(ShipSquare::Any)
+                || (
+                    board[curr_coord] == Square::ShipSquare(ShipSquare::AnyMiddle) 
+                    && (
+                        expected_square == ShipSquare::VerticalMiddle 
+                        || expected_square == ShipSquare::HorizontalMiddle
+                    )
                 );              
 
             all_matches_exact = all_matches_exact && is_exact_match;
@@ -228,7 +229,7 @@ fn partition<T: Eq + Hash + Clone>(unpartitioned: Vec<HashSet<T>>) -> Vec<HashSe
             );
 
         intersecting_sets.push(first_set);
-        let intersection : HashSet<T> = common_coordinates(&mut intersecting_sets.into_iter()).unwrap(); // shouldn't fail b/c iterator is non-empty
+        let intersection: HashSet<T> = common_coordinates(&mut intersecting_sets.into_iter()).unwrap(); // shouldn't fail b/c iterator is non-empty
         partitioned.push(intersection);
 
         unpartitioned_iter = other_sets.into_iter();
@@ -243,9 +244,10 @@ fn partition<T: Eq + Hash + Clone>(unpartitioned: Vec<HashSet<T>>) -> Vec<HashSe
 fn common_coordinates<T : Eq + Hash + Clone>(all_sets_of_coordinates: &mut impl Iterator<Item = HashSet<T>>) -> Option<HashSet<T>> {
     match all_sets_of_coordinates.next() {
         Some(first_set_of_coordinates) => {
-            let common_coordinates = all_sets_of_coordinates.fold(first_set_of_coordinates, |acc, curr_set_of_coordinates| {
-                acc.intersection(&curr_set_of_coordinates).cloned().collect::<HashSet<_>>()
-            });
+            let common_coordinates = all_sets_of_coordinates
+                    .fold(first_set_of_coordinates, |acc, curr_set_of_coordinates| {
+                        acc.intersection(&curr_set_of_coordinates).cloned().collect::<HashSet<_>>()
+                    });
             Some(common_coordinates)
         }
         None => None
