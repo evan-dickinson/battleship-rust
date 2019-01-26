@@ -1,10 +1,11 @@
-mod neighbor;
-mod square;
-mod layout;
 mod board;
-mod test_utils;
-mod solve;
+mod layout;
+mod neighbor;
 mod parse;
+mod ship;
+mod solve;
+mod square;
+mod test_utils;
 
 use self::board::*;
 use self::solve::*;	

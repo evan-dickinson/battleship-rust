@@ -1,7 +1,6 @@
 use std::fmt;
 use std::collections::HashSet;
 
-use crate::layout::*;
 use crate::neighbor::*;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -32,35 +31,6 @@ impl ShipSquare {
             Dot
         ].into_iter().cloned()
     }
-
-    // Return the nth square for a ship, along the given axis.
-    // For example, a ship of size 3 on horizontal axis, we expect to see LeftEnd, then HorizontalMiddle, then RightEnd
-    //
-    // TODO: Rename to expected_ship_square
-    pub fn expected_square_for_ship(ship_size: usize, square_idx: usize, incrementing_axis: Axis) -> Self {
-        use crate::layout::Axis::*;
-
-        assert!(square_idx < ship_size);
-
-        if ship_size == 1 {
-            Dot
-        }
-        else {
-            enum Position { Start, Middle, End };
-            let pos = if square_idx == 0             { Position::Start  }
-                else  if square_idx == ship_size - 1 { Position::End    }
-                else                                 { Position::Middle };
-
-            match (pos, incrementing_axis) {
-                (Position::Start,  Col) => LeftEnd,
-                (Position::Start,  Row) => TopEnd,
-                (Position::Middle, Col) => HorizontalMiddle,
-                (Position::Middle, Row) => VerticalMiddle,
-                (Position::End,    Col) => RightEnd,
-                (Position::End,    Row) => BottomEnd,
-            }
-        }
-    }    
 
     // For a given ship type, which neigbors should be set to water
     pub fn water_neighbors(self) -> HashSet<Neighbor> {

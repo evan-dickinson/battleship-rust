@@ -438,9 +438,9 @@ mod board_tests {
         let coord = board.layout.coord(2, 1);
     	assert_eq!(board[coord], Square::ShipSquare(ShipSquare::Any));
 
-    	assert_eq!(board.ships_to_find_for_size(3), 0);
-    	assert_eq!(board.ships_to_find_for_size(2), 1);
-    	assert_eq!(board.ships_to_find_for_size(1), 3);
+    	assert_eq!(board.num_remaining_ships_to_find(3.into()), 0);
+    	assert_eq!(board.num_remaining_ships_to_find(2.into()), 1);
+    	assert_eq!(board.num_remaining_ships_to_find(1.into()), 3);
     }    
 }
 

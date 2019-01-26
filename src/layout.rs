@@ -1,6 +1,7 @@
 use std::fmt;
 
 use crate::neighbor::*;
+use crate::ship::*;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub struct Coord<'a> {
@@ -198,25 +199,18 @@ impl Layout {
         rows.chain(cols)
     } 
 
-    // Given a starting point for a ship, iterate over the coordinates that make up the squares of that ship.
-    //
-    // Panics: If the ship is not in bounds
-    pub fn coords_in_ship<'a>(&'a self, ship_size: usize, origin: Coord<'a>, incrementing_axis: Axis) -> impl Iterator<Item = Coord> + 'a {
-        (0..ship_size).map(move |square_idx| {
-            origin.offset(square_idx, incrementing_axis).unwrap()
-        })
-    }
-
     // For a ship of a given size, iterate over coordinates (and axies) where a ship like that might be placed.
     // This ignores the board contents -- coordinates are returned based solely on whether or not the coordinates
     // would put the ship out of bounds.
     // 
     // It only returns values that will be in bounds
-    pub fn possible_coords_for_ship<'a>(&'a self, ship_size: usize) -> impl Iterator<Item = (Coord, Axis)> + 'a {
+    //
+    // TODO: This could become a method on ExpectedShip. But ExpectedShip doesn't have access to the layout
+    pub fn possible_heads_for_ship<'a>(&'a self, expected_ship: ExpectedShip) -> impl Iterator<Item = ShipHead<'a>> + 'a {
         // When placing size = 1, we don't increment the coordinate so axis doesn't matter. But if we
         // search by both axes, every coord will match twice. So only search by one axis, and we only match
         // every candidate coordinate once.
-        let axes = if ship_size == 1 { 
+        let axes = if expected_ship.size == 1 { 
             &[Axis::Row][..] // Use [..] to create a slice, not a statically-sized array
         }
         else {
@@ -233,8 +227,15 @@ impl Layout {
 
                 self.all_coordinates()
                     .filter_map(move |origin| {
-                        if self.ship_in_bounds(ship_size, origin, incrementing_axis) {
-                            Some((origin, incrementing_axis))
+                        let ship = Ship {
+                            head: ShipHead {
+                                origin, incrementing_axis
+                            },
+                            size: expected_ship.size,
+                        };
+
+                        if ship.is_in_bounds() {
+                            Some(ShipHead{origin, incrementing_axis})
                         }
                         else {
                             None
@@ -243,19 +244,6 @@ impl Layout {
             })
             .flatten()
     }
-
-    // Would a ship at the given origin fit in bounds?
-    // TODO: Usually origin comes before ship_size
-    fn ship_in_bounds(&self, ship_size: usize, origin: Coord, incrementing_axis: Axis) -> bool {
-        let num_squares_in_bounds = (0..ship_size).filter_map(|square_idx| {
-            // Offset will return None if it goes out of bounds
-            origin.offset(square_idx, incrementing_axis)
-        })
-        .count();
-
-        num_squares_in_bounds == ship_size
-    }
-
 }
 
 #[cfg(test)] use crate::test_utils::*;
@@ -311,20 +299,5 @@ mod layout_tests {
         // Row - Out of bounds
         let new_coord = coord.offset(2, Axis::Col);
         assert_eq!(new_coord, None);        
-    }
-
-    #[test]
-    fn test_ship_in_bounds() {
-        let layout = Layout { num_rows: 3, num_cols: 4 };
-        let origin = layout.coord(1, 0);
-
-        // In bounds
-        let in_bounds = layout.ship_in_bounds(3, origin, Axis::Row);
-        assert_eq!(in_bounds, true);
-
-        // Out of bounds
-        let in_bounds = layout.ship_in_bounds(5, origin, Axis::Col);
-        assert_eq!(in_bounds, false);
-
     }
 }

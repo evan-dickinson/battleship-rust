@@ -1,15 +1,16 @@
 use std::ops::Index;
 use std::collections::HashMap;
 
-use crate::square::*;
 use crate::layout::*;
 use crate::parse::*;
+use crate::ship::*;
+use crate::square::*;
 
 pub struct Board {
-    ships_to_find: HashMap<usize, usize>, // ship size => count of ships remaining
+    ships_to_find: HashMap<ExpectedShip, usize>, // ExpectedShip => count of ships remaining
     squares: Vec<Vec<Square>>,
-    ships_remaining_for_col: Vec<usize>,
-    ships_remaining_for_row: Vec<usize>,
+    ship_squares_remaining_for_col: Vec<usize>,
+    ship_squares_remaining_for_row: Vec<usize>,
     pub layout: Layout,
 }
 
@@ -26,8 +27,8 @@ impl Board {
     }
 
     pub fn new_from_data(squares: Vec<Vec<Square>>, 
-        ships_remaining_for_row: Vec<usize>,
-        ships_remaining_for_col: Vec<usize>,
+        ship_squares_remaining_for_row: Vec<usize>,
+        ship_squares_remaining_for_col: Vec<usize>,
         ships_to_find: HashMap<usize, usize>) -> Self {
 
         let layout = Layout {
@@ -35,13 +36,27 @@ impl Board {
             num_cols: squares[0].len(),            
         };
 
-        Board {
+        let mut board = Board {
             squares,
-            ships_remaining_for_col,
-            ships_remaining_for_row,
+            ship_squares_remaining_for_col,
+            ship_squares_remaining_for_row,
             layout,
-            ships_to_find
-        }
+            ships_to_find: Default::default()
+        };
+
+        // Convert ships_to_find 
+        // - from: usize        => usize
+        // - to:   ExpectedShip => usize
+        let to_find_iter = ships_to_find
+            .iter()
+            .map(|(&size, &count)| {
+                let expected_ship = ExpectedShip { size };
+
+                (expected_ship, count)
+            });
+        board.ships_to_find.extend(to_find_iter);
+
+        board
     }
 
     /////////////////////////////////////////////////////////////////////
@@ -50,7 +65,7 @@ impl Board {
 
     fn format_col_headers(&self) -> String {
         let prefix = "  ".to_string(); // start the line with two blanks
-        self.ships_remaining_for_col.iter()
+        self.ship_squares_remaining_for_col.iter()
             .map(|x| x.to_string() )
             .fold(prefix, |mut acc, x| {
                 acc.push_str(&x);
@@ -62,7 +77,7 @@ impl Board {
         self.squares.iter()
             .enumerate()
             .map(|(row_num, row)| {
-                let row_count = self.ships_remaining_for_row[row_num];
+                let row_count = self.ship_squares_remaining_for_row[row_num];
                 let mut row_text = format!("{}|", row_count);
                 let squares = row.iter().map(Square::to_string);
                 row_text.extend(squares);
@@ -79,14 +94,17 @@ impl Board {
 
         let mut out = "ships: ".to_string();
 
-        let mut ship_sizes = self.ships_to_find.keys().cloned().collect::<Vec<_>>();
-        ship_sizes.sort();
-        ship_sizes.reverse();
+        let mut expected_ships = self.ships_to_find.keys()
+            //.cloned()
+            .collect::<Vec<_>>();
 
-        let ship_strings = ship_sizes.iter()
-            .map(|&ship_size| {
-                let count = self.ships_to_find_for_size(ship_size);
-                let msg = format!("{}sq x {}", ship_size, count);
+        expected_ships.sort();  
+        expected_ships.reverse();
+
+        let ship_strings = expected_ships.iter()
+            .map(|&expected_ship| {
+                let count = self.num_remaining_ships_to_find(*expected_ship);
+                let msg = format!("{} x {}", expected_ship, count);
                 msg.to_string()
             })
             .collect::<Vec<_>>();
@@ -151,8 +169,8 @@ impl Board {
 
         // Update ships remaining
         if new_value.is_ship() && !curr_value.is_ship() {
-            self.ships_remaining_for_row[index.row_num] -= 1;
-            self.ships_remaining_for_col[index.col_num] -= 1;
+            self.ship_squares_remaining_for_row[index.row_num] -= 1;
+            self.ship_squares_remaining_for_col[index.col_num] -= 1;
         }
 
         *changed = true;
@@ -178,19 +196,19 @@ impl Board {
     }
 
     // Count number of ships remaining in the given row/col
-    pub fn ships_remaining(&self, row_or_col: RowOrCol) -> usize {
+    pub fn ship_squares_remaining(&self, row_or_col: RowOrCol) -> usize {
         match row_or_col.axis {
-            Axis::Row => self.ships_remaining_for_row[row_or_col.index],
-            Axis::Col => self.ships_remaining_for_col[row_or_col.index],
+            Axis::Row => self.ship_squares_remaining_for_row[row_or_col.index],
+            Axis::Col => self.ship_squares_remaining_for_col[row_or_col.index],
         }
     }
 
     // Enumerate all the sizes of ships that remain to be found
-    pub fn remaining_ship_sizes<'a>(&'a self) -> impl Iterator<Item = usize> + 'a {
+    pub fn remaining_expected_ships<'a>(&'a self) -> impl Iterator<Item = ExpectedShip> + 'a {
         self.ships_to_find.iter()
-            .filter_map(|(&ship_size, &count)|
+            .filter_map(|(&expected_ship, &count)|
                 if count > 0 {
-                    Some(ship_size)
+                    Some(expected_ship)
                 }
                 else {
                     None
@@ -199,41 +217,49 @@ impl Board {
     }
 
     // How many ships of a given size remain to be found
-    pub fn ships_to_find_for_size(&self, ship_size: usize) -> usize {
-        if let Some(&total) = self.ships_to_find.get(&ship_size) {
-            let found = self.count_found_ships(ship_size);
+    pub fn num_remaining_ships_to_find(&self, expected_ship: ExpectedShip) -> usize {
+        if let Some(&total) = self.ships_to_find.get(&expected_ship) {
+            let found = self.count_found_ships(expected_ship);
 
-            return total - found;
+            total - found
         }
         else {
-            return 0;
+            0
         }
     }
 
     // Count how many ships of a given size are found
-    fn count_found_ships(&self, ship_size: usize) -> usize {
-        self.layout.possible_coords_for_ship(ship_size)
-            .filter(move |(coord, incrementing_axis)| {
-                self.ship_exists_at_coord(ship_size, *coord, *incrementing_axis)
+    fn count_found_ships(&self, expected_ship: ExpectedShip) -> usize {
+        self.layout.possible_heads_for_ship(expected_ship)
+            .filter(move |&ship_head| {
+                let ship = Ship {
+                    head: ship_head,
+                    size: expected_ship.size,
+                };
+                self.ship_is_found(ship)
             })
             .count()
+
     }
 
     // Does a specific ship (size + axis) exist at these coords?
-    fn ship_exists_at_coord(&self, ship_size: usize, origin: Coord, incrementing_axis: Axis) -> bool {
-        self.layout.coords_in_ship(ship_size, origin, incrementing_axis)
-            .enumerate()
-            .all(|(square_idx, curr_coord)| {
-                let expected = ShipSquare::expected_square_for_ship(ship_size, square_idx, incrementing_axis);
-                self[curr_coord] == Square::ShipSquare(expected)                
-            })
+    fn ship_is_found(&self, ship: Ship) -> bool {
+        match ship.coords() {
+            None         => false, // ship would be out of bounds
+            Some(coords) => coords
+                .enumerate()
+                .all(|(square_idx, curr_coord)| {
+                    let expected = ship.expected_square_for_idx(square_idx);
+                    self[curr_coord] == Square::ShipSquare(expected)                
+                })
+        }
     }
 }
 
-impl<'a> Index<Coord<'a>> for Board {
+impl<'coord> Index<Coord<'coord>> for Board {
     type Output = Square;
 
-    fn index(&self, index : Coord) -> &Square {
+    fn index(&self, index: Coord) -> &Square {
         &self.squares[index.row_num][index.col_num]
     }
 }
@@ -319,32 +345,37 @@ mod test {
     }
 
     #[test]
-    fn it_counts_ships_remaining() {
-        let board = make_test_board();
+    fn it_counts_ship_squares_remaining() {
+        let board = Board::new(&vec![
+            "  0123", 
+            "9|    ", 
+            "8|    ",
+            "7|    ",
+        ]);
 
         let row0 = board.layout.row(0);
         let row1 = board.layout.row(1);
         let col0 = board.layout.col(0);
         let col2 = board.layout.col(2);
 
-        assert_eq!(board.ships_remaining(row0), 1);
-        assert_eq!(board.ships_remaining(row1), 2);
-        assert_eq!(board.ships_remaining(col0), 1);
-        assert_eq!(board.ships_remaining(col2), 0);     
+        assert_eq!(board.ship_squares_remaining(row0), 9);
+        assert_eq!(board.ship_squares_remaining(row1), 8);
+        assert_eq!(board.ship_squares_remaining(col0), 0);
+        assert_eq!(board.ship_squares_remaining(col2), 2);     
     }
 
     #[test]
-    fn it_adjusts_ships_remaining_after_set() {
+    fn it_adjusts_ship_squares_remaining_after_set() {
         let mut board = make_test_board();
         let layout = board.layout;
         let coord = layout.coord(0, 1);
 
         assert_eq!(
-            board.ships_remaining(layout.row(coord.row_num)),
+            board.ship_squares_remaining(layout.row(coord.row_num)),
             2);
 
         assert_eq!(
-            board.ships_remaining(layout.col(coord.col_num)),
+            board.ship_squares_remaining(layout.col(coord.col_num)),
             1);
 
         let mut changed = false;
@@ -352,10 +383,10 @@ mod test {
 
         // ships remaining has decreased
         assert_eq!(
-            board.ships_remaining(layout.row(coord.row_num)),
+            board.ship_squares_remaining(layout.row(coord.row_num)),
             2 - 1);
         assert_eq!(
-            board.ships_remaining(layout.col(coord.col_num)),
+            board.ship_squares_remaining(layout.col(coord.col_num)),
             1 - 1);
 
         assert_eq!(changed, true);
@@ -415,39 +446,39 @@ mod test_find_ships {
         ]);    
 
         // Find vertical ship
-        let coord = board.layout.coord(2, 0);
-        let found_ship = board.ship_exists_at_coord(
-            /* size */ 4, coord, Axis::Row
+        let origin = board.layout.coord(2, 0);
+        let found_ship = board.ship_is_found(
+            Ship { size: 4, head: ShipHead {origin, incrementing_axis: Axis::Row }}
             );
         assert_eq!(found_ship, true);
 
         // Find horizontal ship
-        let coord = board.layout.coord(0, 5);
-        let found_ship = board.ship_exists_at_coord(
-            /* size */ 2, coord, Axis::Col
+        let origin = board.layout.coord(0, 5);
+        let found_ship = board.ship_is_found(
+            Ship { size: 2, head: ShipHead {origin, incrementing_axis: Axis::Col }}
             );
         assert_eq!(found_ship, true);        
 
         // Finds dot
-        let coord = board.layout.coord(0, 2);
-        let found_ship = board.ship_exists_at_coord(
-            /* size */ 1, coord, Axis::Row
+        let origin = board.layout.coord(0, 2);
+        let found_ship = board.ship_is_found(
+            Ship { size: 1, head: ShipHead {origin, incrementing_axis: Axis::Row }}
             );
         assert_eq!(found_ship, true);        
 
         // Does not match when size < ship size
-        let coord = board.layout.coord(2, 0);
-        let found_ship = board.ship_exists_at_coord(
-            /* size */ 3, coord, Axis::Row
+        let origin = board.layout.coord(2, 0);
+        let found_ship = board.ship_is_found(
+            Ship { size: 3, head: ShipHead {origin, incrementing_axis: Axis::Row }}
             );
         assert_eq!(found_ship, false);
 
         // Does not match when size > ship size.
         // We ask for a ship of size 3, but the ship 
         // has size 4.
-        let coord = board.layout.coord(2, 0);
-        let found_ship = board.ship_exists_at_coord(
-            /* size */ 5, coord, Axis::Row
+        let origin = board.layout.coord(2, 0);
+        let found_ship = board.ship_is_found(
+            Ship { size: 5, head: ShipHead {origin, incrementing_axis: Axis::Row }}
             );
         assert_eq!(found_ship, false);                
     }
@@ -463,16 +494,16 @@ mod test_find_ships {
             "0|     ",
         ]);
 
-        let count = board.count_found_ships(1);
+        let count = board.count_found_ships(1.into());
         assert_eq!(count, 1);
 
-        let count = board.count_found_ships(3);
+        let count = board.count_found_ships(3.into());
         assert_eq!(count, 0);    
         
-        let count = board.count_found_ships(4);
+        let count = board.count_found_ships(4.into());
         assert_eq!(count, 2);      
 
-        let count = board.count_found_ships(5);
+        let count = board.count_found_ships(5.into());
         assert_eq!(count, 0);              
     }
 }

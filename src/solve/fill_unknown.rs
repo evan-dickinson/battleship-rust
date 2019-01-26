@@ -8,7 +8,7 @@ use crate::board::*;
 pub fn fill_with_water(board: &mut Board, changed : &mut bool) {
     let layout = board.layout;
     for row_or_col in layout.rows_and_cols() {
-        if board.ships_remaining(row_or_col) == 0 {
+        if board.ship_squares_remaining(row_or_col) == 0 {
             board.replace_unknown(row_or_col, Square::Water, changed);
         }
     }
@@ -23,7 +23,7 @@ pub fn fill_with_ships(board: &mut Board, changed: &mut bool) {
             .filter(|coord| board[*coord] == Square::Unknown )
             .count();
 
-        if num_unknown == board.ships_remaining(row_or_col) {
+        if num_unknown == board.ship_squares_remaining(row_or_col) {
             board.replace_unknown(row_or_col, Square::ShipSquare(ShipSquare::Any), changed);
         }
     }
