@@ -1,4 +1,11 @@
+// `error_chain!` can recurse deeply
+#![recursion_limit = "1024"]
+
+#[macro_use]
+extern crate error_chain;
+
 mod board;
+mod error;
 mod layout;
 mod neighbor;
 mod parse;
@@ -7,10 +14,11 @@ mod solve;
 mod square;
 mod test_utils;
 
-use self::board::*;
-use self::solve::*;	
+use crate::board::*;
+use crate::solve::*;	
+use crate::error::*;
 
-fn main() {
+fn run() -> Result<()> {
     let _puzzle1 = vec![
         "  112121",
         "2|      ",
@@ -135,14 +143,38 @@ fn main() {
 
     let mut board = Board::new(&_puzzle8);
 
-    solve(&mut board);
+    let is_solved = solve(&mut board)?;
 
     board.print();
 
-    if board.is_solved() {
+    if is_solved {
         println!("Solved 😀");
     }
     else {
         println!("Not solved 😞");
+    }
+
+    Ok(())
+}
+
+fn main() {
+    if let Err(ref e) = run() {
+        use std::io::Write;
+        let stderr = &mut ::std::io::stderr();
+        let errmsg = "Error writing to stderr";
+
+        writeln!(stderr, "error: {}", e).expect(errmsg);
+
+        for e in e.iter().skip(1) {
+            writeln!(stderr, "caused by: {}", e).expect(errmsg);
+        }
+
+        // The backtrace is not always generated. Try to run this example
+        // with `RUST_BACKTRACE=1`.
+        if let Some(backtrace) = e.backtrace() {
+            writeln!(stderr, "backtrace: {:?}", backtrace).expect(errmsg);
+        }
+
+        ::std::process::exit(1);
     }
 }

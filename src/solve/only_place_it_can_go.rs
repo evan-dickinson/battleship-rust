@@ -3,31 +3,35 @@
 // Solutions for the "only place it can go" rule
 
 use crate::board::*;
+use crate::error::*;
 use crate::layout::*;
 use crate::ship::*;
 use crate::square::*;
+
 
 use std::collections::HashSet;
 use std::hash::Hash;
 
 use smallvec::SmallVec;
 
-pub fn find_only_place_for_ships(board: &mut Board, changed : &mut bool) {
+pub fn find_only_place_for_ships(board: &mut Board) -> Result<()> {
     let expected_ships = board.remaining_expected_ships().collect::<SmallVec<[_; 6]>>();
 
     for expected_ship in expected_ships {
         // todo: rename to something with "remaining" in the name
         let num_ships = board.num_remaining_ships_to_find(expected_ship);
 
-        find_only_place_for_ship(board, expected_ship, num_ships, changed);
+        find_only_place_for_ship(board, expected_ship, num_ships)?;
     }
+
+    Ok(())
 }
 
-fn find_only_place_for_ship(board: &mut Board, expected_ship: ExpectedShip, num_ships: usize, changed: &mut bool) {
+fn find_only_place_for_ship(board: &mut Board, expected_ship: ExpectedShip, num_ships: usize) -> Result<()> {
     let layout = board.layout;
     let placements = layout.possible_heads_for_ship(expected_ship)
         .filter_map(|ship_head| {
-            let ship = Ship { head: ship_head, size: expected_ship.size };
+            let ship = ship_head.to_ship(expected_ship);
 
             if let Some(num_ship_squares) = can_fit_ship_at_coord(board, ship) {
                 if would_ship_at_coord_be_clear_of_other_ships(board, ship) &&  
@@ -50,7 +54,7 @@ fn find_only_place_for_ship(board: &mut Board, expected_ship: ExpectedShip, num_
 
         for ship_head in placements {
             let ship = ship_head.to_ship(expected_ship);
-            place_ship_at_coord(board, ship, changed);
+            place_ship_at_coord(board, ship)?;
         }
     }
     else {
@@ -73,31 +77,37 @@ fn find_only_place_for_ship(board: &mut Board, expected_ship: ExpectedShip, num_
         let partitioned_coordinates = partition(coordinates_for_all_placements);
 
         if partitioned_coordinates.len() == num_ships {
-            place_ship_at_intersection_of_coords(board, &mut partitioned_coordinates.into_iter(), changed);
+            place_ship_at_intersection_of_coords(board, &mut partitioned_coordinates.into_iter())?;
         }
     }
+
+    Ok(())
 }
 
 // After determining we can place a ship here, place it.
-fn place_ship_at_coord(board: &mut Board, ship: Ship, changed: &mut bool) {
+fn place_ship_at_coord(board: &mut Board, ship: Ship) -> Result<()> {
     for (square_idx, coord) in ship.coords().unwrap().enumerate() {
         let ship_square_type = ship.expected_square_for_idx(square_idx);
         let new_value = Square::ShipSquare(ship_square_type);
-        board.set(coord, new_value, changed);
+        board.set(coord, new_value)?;
     }
+
+    Ok(())
 }
 
-fn place_ship_at_intersection_of_coords<'a>(board: &mut Board, coordinates_for_all_placements: &mut impl Iterator<Item = HashSet<Coord<'a>>>, 
-    changed: &mut bool) {
+fn place_ship_at_intersection_of_coords<'a>(board: &mut Board, 
+    coordinates_for_all_placements: &mut impl Iterator<Item = HashSet<Coord<'a>>>) -> Result<()> {
 
     for coords in coordinates_for_all_placements {
         // Set coordinates in the intersection
         for coord in coords {
             if board[coord] == Square::Unknown {
-                board.set(coord, Square::ShipSquare(ShipSquare::Any), changed);
+                board.set(coord, Square::ShipSquare(ShipSquare::Any))?;
             }
         }        
     }
+
+    Ok(())
 }
 
 fn enough_free_ships_on_constant_axis(board: &Board, ship: Ship, num_ship_squares: usize) -> bool {
@@ -513,7 +523,7 @@ mod test_only_place_it_can_go {
     }
 
     #[test]
-    fn test_place_ship_at_coord() {
+    fn test_place_ship_at_coord() -> Result<()> {
         let mut board = Board::new(&vec![
             "  002",
             "1|   ",
@@ -523,12 +533,9 @@ mod test_only_place_it_can_go {
         ]);        
         let layout = board.layout;
 
-        let mut changed = false;
         let origin = layout.coord(2, 0);
         let ship = Ship::new(origin, Axis::Row, 4);
-        place_ship_at_coord(&mut board, ship, &mut changed);
-
-        assert_eq!(true, changed);
+        place_ship_at_coord(&mut board, ship)?;
 
         let expected = vec![
             "  000",
@@ -539,14 +546,15 @@ mod test_only_place_it_can_go {
         ].iter().map(|x| x.to_string()).collect::<Vec<_>>();
 
         assert_eq!(board.to_strings(), expected); 
+
+        Ok(())
     }
 
-    fn do_test(before: Vec<&str>, after: Vec<&str>) {
+    fn do_test(before: Vec<&str>, after: Vec<&str>) -> Result<()> {
         let mut board = Board::new(&before);
         let expected = after.iter().map(|x| x.to_string()).collect::<Vec<_>>();
 
-        let mut _changed = false;
-        find_only_place_for_ships(&mut board, &mut _changed);
+        find_only_place_for_ships(&mut board)?;
 
         let board_strings = board.to_strings();
 
@@ -558,6 +566,8 @@ mod test_only_place_it_can_go {
         // for (actual_line, expected_line) in text_lines {
         //  assert_eq!(actual_line, expected_line);
         // }
+
+        Ok(())
     }
 
     // TESTS:
@@ -565,7 +575,7 @@ mod test_only_place_it_can_go {
     //   know will have a ship.
 
     #[test]
-    fn it_fills_in_4sq() {
+    fn it_fills_in_4sq() -> Result<()> {
         do_test(vec![
             "ships: 4sq x 1.",
             "  01111",
@@ -575,11 +585,11 @@ mod test_only_place_it_can_go {
             "ships: 4sq x 0.",
             "  00000",
             "0|~<-->",
-        ]);
+        ])
     }   
 
     #[test]
-    fn doesnt_fill_in_adjacent_to_ship() {
+    fn doesnt_fill_in_adjacent_to_ship() -> Result<()> {
         // Don't fill in the 4sq ship when it will abut an existing ship.
         // These are bad results:
         //
@@ -600,12 +610,12 @@ mod test_only_place_it_can_go {
             "ships: 4sq x 1.",
             "  001110",
             "4|~*   *",
-        ]);
+        ])
     }   
 
 
     #[test]
-    fn it_fills_in_4sq_x2() {
+    fn it_fills_in_4sq_x2() -> Result<()> {
         do_test(vec![
             "ships: 4sq x 2.",
             "  02222",
@@ -619,11 +629,11 @@ mod test_only_place_it_can_go {
             "0|~<-->",
             "0|~~~~~",
             "0|~<-->",
-        ]);
+        ])
     }   
 
     #[test]
-    fn it_doesnt_fill_if_not_enough_space() {
+    fn it_doesnt_fill_if_not_enough_space() -> Result<()> {
         do_test(vec![
             "ships: 4sq x 1.",
             "  01111",
@@ -633,11 +643,11 @@ mod test_only_place_it_can_go {
             "ships: 4sq x 1.",
             "  01111",
             "3|~    ",
-        ]);
+        ])
     }
 
     #[test]
-    fn it_fills_only_where_there_is_space_on_incrementing_axis() {
+    fn it_fills_only_where_there_is_space_on_incrementing_axis() -> Result<()> {
         do_test(vec![
             "ships: 2sq x 1.",
             "  00110",
@@ -647,11 +657,11 @@ mod test_only_place_it_can_go {
             "ships: 2sq x 0.", 
             "  00000",
             "0|~ <> ", // These middle squares were the only ones with space on incrementing axis
-        ]);
+        ])
     }   
 
     #[test]
-    fn it_fills_only_where_there_is_space_on_constant_axis() {
+    fn it_fills_only_where_there_is_space_on_constant_axis() -> Result<()> {
         do_test(vec![
             "ships: 3sq x 1.",
             "  030",
@@ -665,11 +675,11 @@ mod test_only_place_it_can_go {
             "1| ^ ",
             "1| | ",
             "1| v ",
-        ]);
+        ])
     }       
 
     #[test]
-    fn it_fills_in_dot() {
+    fn it_fills_in_dot() -> Result<()> {
         do_test(vec![
             "ships: 1sq x 1.",
             "  00010",
@@ -679,11 +689,11 @@ mod test_only_place_it_can_go {
             "ships: 1sq x 0.",
             "  00000",
             "0|~~~•~",
-        ]);
+        ])
     }   
 
     #[test]
-    fn it_fills_in_2_dots() {
+    fn it_fills_in_2_dots() -> Result<()> {
         do_test(vec![
             "ships: 1sq x 2.",
             "  01010",
@@ -695,12 +705,11 @@ mod test_only_place_it_can_go {
             "  00000",
             "0|~~~•~",
             "0|~•~~~",
-
-        ]);
+        ])
     }
 
     #[test]
-    fn it_completes_partial_ship() {
+    fn it_completes_partial_ship() -> Result<()> {
         do_test(vec![
             "ships: 5sq x 1.",
             "  020",
@@ -720,11 +729,11 @@ mod test_only_place_it_can_go {
             "0|~|~",
             "0|~v~",            
             "0|~ ~",        
-        ]);
+        ])
     }
 
     #[test]
-    fn it_completes_generic_middle_horizontally() {
+    fn it_completes_generic_middle_horizontally() -> Result<()> {
         do_test(vec![
             "ships: 3sq x 1.",
             "  01010",
@@ -734,11 +743,11 @@ mod test_only_place_it_can_go {
             "ships: 3sq x 0.",
             "  00000",
             "0| <-> ",
-        ]);
+        ])
     }   
 
     #[test]
-    fn it_completes_generic_middle_vertically() {
+    fn it_completes_generic_middle_vertically() -> Result<()> {
         do_test(vec![
             "ships: 3sq x 1.",
             "  020",
@@ -756,11 +765,11 @@ mod test_only_place_it_can_go {
             "0| | ",
             "0| v ",
             "0|   ",
-        ]);
+        ])
     }       
 
     #[test]
-    fn it_places_partial_ship_when_one_possibility() {
+    fn it_places_partial_ship_when_one_possibility() -> Result<()> {
         do_test(vec![
             "ships: 5sq x 1.",
             "  1111111",
@@ -770,11 +779,11 @@ mod test_only_place_it_can_go {
             "ships: 5sq x 1.",
             "  1100011",
             "4|  ***  ",
-        ]);     
+        ])
     }
 
     #[test]
-    fn it_doesnt_place_partial_ship_when_two_possibilities() {
+    fn it_doesnt_place_partial_ship_when_two_possibilities() -> Result<()> {
         do_test(vec![
             "ships: 5sq x 1.",
             "  1111111",
@@ -786,12 +795,11 @@ mod test_only_place_it_can_go {
             "  1111111",
             "7|       ",
             "7|       ",
-        ]);     
+        ])
     }   
 
-
     #[test]
-    fn it_places_two_partial_ships_when_two_possibilities() {
+    fn it_places_two_partial_ships_when_two_possibilities() -> Result<()> {
         do_test(vec![
             "ships: 5sq x 2.",
             "  2222222",
@@ -803,7 +811,7 @@ mod test_only_place_it_can_go {
             "  2200022",
             "4|  ***  ",
             "4|  ***  ",
-        ]);     
+        ])
     }     
 }
 

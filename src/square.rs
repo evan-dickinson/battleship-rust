@@ -62,6 +62,14 @@ impl ShipSquare {
         }
     }
 
+    // For a given ship type, which neighbors should be set to ships
+    pub fn ship_neighbors(self) -> HashSet<Neighbor> {
+        let all_neighbors = Neighbor::all_neighbors();
+        let water_neighbors = self.water_neighbors();
+
+        // Any squre that's not water is a ship
+        all_neighbors.difference(&water_neighbors).cloned().collect()
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]

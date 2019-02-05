@@ -1,6 +1,7 @@
 use std::ops::Index;
 use std::collections::HashMap;
 
+use crate::error::*;
 use crate::layout::*;
 use crate::parse::*;
 use crate::ship::*;
@@ -11,6 +12,7 @@ pub struct Board {
     squares: Vec<Vec<Square>>,
     ship_squares_remaining_for_col: Vec<usize>,
     ship_squares_remaining_for_row: Vec<usize>,
+    dirty: bool,
     pub layout: Layout,
 }
 
@@ -41,6 +43,7 @@ impl Board {
             ship_squares_remaining_for_col,
             ship_squares_remaining_for_row,
             layout,
+            dirty: false,
             ships_to_find: Default::default()
         };
 
@@ -141,14 +144,27 @@ impl Board {
 
     /////////////////////////////////////////////////////////////////////
     //
+    // Change tracking
+
+    pub fn dirty(&self) -> bool {
+        self.dirty
+    }
+
+    pub fn clear_dirty(&mut self) {
+        self.dirty = false
+    }
+
+    /////////////////////////////////////////////////////////////////////
+    //
     // Setting values
 
+
     // changed: set to true if board[index] != value, othewise do not set
-    pub fn set(&mut self, index: Coord, new_value: Square, changed: &mut bool) {
+    pub fn set(&mut self, index: Coord, new_value: Square) -> Result<()> {
         let curr_value = self[index];
 
         if curr_value == new_value {
-            return;
+            return Ok(());
         }
 
         // Check for logic errors. You can only:
@@ -156,13 +172,19 @@ impl Board {
         // - Refine ShipSquare::AnyMiddle to a more specific kind of middle
         // - Change Unknown to another value
         if curr_value == Square::ShipSquare(ShipSquare::Any) {
-            assert!(new_value.is_ship());
+            ensure!(new_value.is_ship(), 
+                "Attempting to set {:?} to a non-ship value: {:?}. index: {:?}",
+                curr_value, new_value, index);
         }
         else if curr_value == Square::ShipSquare(ShipSquare::AnyMiddle) {
-            assert!(new_value.is_ship_middle());
+            ensure!(new_value.is_ship_middle(), 
+                "Attempting to set {:?} to a non-middle value: {:?}. index: {:?}",
+                curr_value, new_value, index);
         }
         else {
-            assert_eq!(curr_value, Square::Unknown);
+            ensure!(curr_value == Square::Unknown,
+                "Attempting to set a square whose current value is not Unknown. new_value: {:?} index: {:?}",
+                new_value, index);
         }
 
         self.squares[index.row_num][index.col_num] = new_value;
@@ -172,17 +194,20 @@ impl Board {
             self.ship_squares_remaining_for_row[index.row_num] -= 1;
             self.ship_squares_remaining_for_col[index.col_num] -= 1;
         }
-
-        *changed = true;
+        
+        self.dirty = true;
+        Ok(())
     }
 
     // In the given row/col, replace all Unknown squares with the specified value
-    pub fn replace_unknown(&mut self, row_or_col: RowOrCol, new_value: Square, changed: &mut bool) {
+    pub fn replace_unknown(&mut self, row_or_col: RowOrCol, new_value: Square) -> Result<()> {
         for coord in row_or_col.coords() {
-            if self[coord] == Square::Unknown {
-                self.set(coord, new_value, changed);
+            if self[coord] == Square::Unknown { 
+                self.set(coord, new_value)?
             }
         }
+
+        Ok(())
     }
 
     /////////////////////////////////////////////////////////////////////
@@ -268,7 +293,7 @@ mod test {
     use super::*;
 
 	#[test]
-	fn it_sets_changed() {
+	fn it_sets_changed() -> Result<()> {
 	    let mut board = Board::new(&vec![
 	        "  001",
 	        "0|   ",
@@ -276,22 +301,17 @@ mod test {
 	    ]);
         let layout = board.layout;
 
-	    let mut changed = false;
-
-	    // Setting an unchanged square leaves changed alone
+	    // Set a squre to its current value => dirty is false
 	    let coord = layout.coord(0, 1);
-	    board.set(coord, Square::Water, &mut changed);
-	    assert_eq!(changed, false);
+	    board.set(coord, Square::Water)?;
+	    assert_eq!(board.dirty, false);
 
-	    // Setting a changed square sets changed
+	    // Set a square to a new value => dirty is true
 	    let coord = layout.coord(0, 0);
-	    board.set(coord, Square::Water, &mut changed);
-	    assert_eq!(changed, true);
+	    board.set(coord, Square::Water)?;
+	    assert_eq!(board.dirty, true);
 
-	    // Once changed is true, don't set it back to false
-	    let coord = layout.coord(0, 0);
-	    board.set(coord, Square::Water, &mut changed);
-	    assert_eq!(changed, true);
+        Ok(())
 	}
 
     #[test]
@@ -307,7 +327,7 @@ mod test {
     }    
 
     #[test]
-    fn it_accesses_with_index() {
+    fn it_accesses_with_index() -> Result<()> {
         let mut board = make_test_board();
         let layout = board.layout;
 
@@ -315,13 +335,15 @@ mod test {
 
         assert_eq!(board[coord1], Square::Unknown);
         
-        let mut _changed = false;
-        board.set(coord1, Square::Water, &mut _changed);
+        board.set(coord1, Square::Water)?;
         
         assert_eq!(board[coord1], Square::Water);
+        assert_eq!(board.dirty, true);
 
         let coord2 = layout.coord(3, 1);
         assert_eq!(board[coord2], Square::Water);
+
+        Ok(())
     }
 
     // TODO: This test should move to layout
@@ -362,7 +384,7 @@ mod test {
     }
 
     #[test]
-    fn it_adjusts_ship_squares_remaining_after_set() {
+    fn it_adjusts_ship_squares_remaining_after_set() -> Result<()> {
         let mut board = make_test_board();
         let layout = board.layout;
         let coord = layout.coord(0, 1);
@@ -375,8 +397,7 @@ mod test {
             board.ship_squares_remaining(layout.col(coord.col_num)),
             1);
 
-        let mut changed = false;
-        board.set(coord, Square::ShipSquare(ShipSquare::Any), &mut changed);
+        board.set(coord, Square::ShipSquare(ShipSquare::Any))?;
 
         // ships remaining has decreased
         assert_eq!(
@@ -386,7 +407,9 @@ mod test {
             board.ship_squares_remaining(layout.col(coord.col_num)),
             1 - 1);
 
-        assert_eq!(changed, true);
+        assert_eq!(board.dirty, true);
+
+        Ok(())
     }
 
     // TODO: This test should move to layout

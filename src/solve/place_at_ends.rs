@@ -1,8 +1,10 @@
-use crate::square::*;
 use crate::board::*;
+use crate::error::*;
+use crate::layout::*;
 use crate::neighbor::*;
+use crate::square::*;
 
-pub fn place_ships_next_to_ends(board: &mut Board, changed: &mut bool) {
+pub fn place_ships_next_to_ends(board: &mut Board) -> Result<()> {
 	let layout = board.layout;
     for coord in layout.all_coordinates() {
         let neighbor = match board[coord] {
@@ -13,31 +15,41 @@ pub fn place_ships_next_to_ends(board: &mut Board, changed: &mut bool) {
             _                                         => continue,
         };
 
-        // Panic if neighbor is out of bounds. That would mean, for example, that there's the
-        // top end of a ship on the last row of the board. There would be no place for the rest
-        // of the ship to go.
-        let neighbor_coord = coord.neighbor(neighbor).unwrap();
+        // Convert from Option<Coord> to Result<Coord>, so we can return an error
+        // if neighbor is out of bounds. That would mean that, for example, the
+        // top end of a ship is on the last row of the board. No place to put the
+        // rest of the ship.
+        let neighbor_coord_result: Result<Coord> = coord.neighbor(neighbor)
+        	.ok_or_else(
+        		|| format!("Square {:?} at {:?} wants a neighbor to the {:?}, but no place to put it.",
+        	 		board[coord], coord, neighbor).into()
+        		);
+        let neighbor_coord = neighbor_coord_result?;
+
         if board[neighbor_coord] == Square::Unknown {
-        	board.set(neighbor_coord, Square::ShipSquare(ShipSquare::Any), changed);
+        	board.set(neighbor_coord, Square::ShipSquare(ShipSquare::Any))?;
         }
     }        
+
+    Ok(())
 }
 
 #[cfg(test)]
 mod test {
 	use super::*;
 
-	fn do_test(before: Vec<&str>, after: Vec<&str>) {
+	fn do_test(before: Vec<&str>, after: Vec<&str>) -> Result<()> {
 		let mut board = Board::new(&before);
 		let expected = after.iter().map(|x| x.to_string()).collect::<Vec<_>>();
 
-	    let mut _changed = false;
-	    place_ships_next_to_ends(&mut board, &mut _changed);
+	    place_ships_next_to_ends(&mut board)?;
 	    assert_eq!(board.to_strings(), expected);        
+
+	    Ok(())
 	}
 
 	#[test]
-	fn it_places_ships_next_to_ends() {
+	fn it_places_ships_next_to_ends() -> Result<()> {
 	    do_test(vec![
 	        "  00100",
 	        "0|  ^  ",
@@ -47,25 +59,24 @@ mod test {
 	        "  00000",
 	        "0|  ^  ",
 	        "0|  *  ",    
-	    ]);
+	    ])
 	}
 
 	#[test]
-	#[should_panic]
-	fn it_panics_if_no_place_for_a_ship() {
+	fn it_errors_if_no_place_for_a_ship() {
 	    let before = vec![
 	        "  00100",
 	        "1|  v  ",
 	    ];
 
 		let mut board = Board::new(&before);
+	    let result = place_ships_next_to_ends(&mut board);
 
-	    let mut _changed = false;
-	    place_ships_next_to_ends(&mut board, &mut _changed);
+	    assert_eq!(result.is_err(), true);
 	}
 
 	#[test]
-	fn it_doesnt_overwrite_existing_ship() {
+	fn it_doesnt_overwrite_existing_ship() -> Result<()> {
 		// If it tries to overwrite v because it's adjacent to ^, board.set will assert.
 		// Make sure that doesn't happen.
 		do_test(vec![
@@ -77,6 +88,6 @@ mod test {
 	        "  00100",	
 	        "0|  ^  ",
 	        "1|  v  ",	
-	   	]);
+	   	])
 	}
 }	

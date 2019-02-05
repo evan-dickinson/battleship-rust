@@ -2,10 +2,11 @@
 //
 // Solutions that surround ships
 
-use crate::square::*;
 use crate::board::*;
+use crate::error::*;
+use crate::square::*;
 
-pub fn surround_ships_with_water(board: &mut Board, changed: &mut bool) {
+pub fn surround_ships_with_water(board: &mut Board) -> Result<()> {
     let layout = board.layout;
     let coords = layout.all_coordinates()
         .filter_map(|coord| { 
@@ -26,91 +27,99 @@ pub fn surround_ships_with_water(board: &mut Board, changed: &mut bool) {
         .collect::<Vec<_>>();
 
     for coord in coords {
-        board.set(coord, Square::Water, changed);
+        board.set(coord, Square::Water)?;
     }
+
+    Ok(())
 }
 
 
-#[test]
-fn it_fills_diagonals() {
-    let mut board = Board::new(&vec![
-        "  00000",
-        "0|     ",
-        "0|     ",
-        "0|  *  ",
-        "0|     ",
-        "0|     ",
-    ]);
+#[cfg(test)]
+mod test {
+    use super::*;
 
-    let mut _changed = false;
-    surround_ships_with_water(&mut board, &mut _changed);
-    let expected = vec![
-        "  00000",
-        "0|     ",
-        "0| ~ ~ ",
-        "0|  *  ",
-        "0| ~ ~ ",
-        "0|     ",        
-    ].iter().map(|x| x.to_string()).collect::<Vec<_>>();
-    assert_eq!(board.to_strings(), expected);
-}    
+    fn do_test(before: Vec<&str>, after: Vec<&str>) -> Result<()> {
+        let mut board = Board::new(&before);
+        let expected = after.iter().map(|x| x.to_string()).collect::<Vec<_>>();
 
-#[test]
-fn it_surrounds_dots() {
-    let mut board = Board::new(&vec![
-        "  00000",
-        "0|     ",
-        "0|  •  ",
-        "0|     ",
-    ]);
+        surround_ships_with_water(&mut board)?;
+        assert_eq!(board.to_strings(), expected);        
 
-    let mut _changed = false;
-    surround_ships_with_water(&mut board, &mut _changed);
-    let expected = vec![
-        "  00000",
-        "0| ~~~ ",
-        "0| ~•~ ",
-        "0| ~~~ ",
-    ].iter().map(|x| x.to_string()).collect::<Vec<_>>();
-    assert_eq!(board.to_strings(), expected);        
+        Ok(())
+    }
+
+
+    #[test]
+    fn it_fills_diagonals() -> Result<()> {
+        do_test(vec![
+            "  00000",
+            "0|     ",
+            "0|     ",
+            "0|  *  ",
+            "0|     ",
+            "0|     ",
+        ],
+         vec![
+            "  00000",
+            "0|     ",
+            "0| ~ ~ ",
+            "0|  *  ",
+            "0| ~ ~ ",
+            "0|     ",        
+        ])
+    }
+
+    #[test]
+    fn it_surrounds_dots() -> Result<()> {
+        do_test(vec![
+            "  00000",
+            "0|     ",
+            "0|  •  ",
+            "0|     ",
+        ],
+        vec![
+            "  00000",
+            "0| ~~~ ",
+            "0| ~•~ ",
+            "0| ~~~ ",
+        ])
+    }
+
+    #[test]
+    fn it_surrounds_middles() -> Result<()> {
+        do_test(vec![
+            "  00000",
+            "0|     ",
+            "0|  -  ",
+            "0|     ",
+        ],
+        vec![
+            "  00000",
+            "0| ~~~ ",
+            "0|  -  ",
+            "0| ~~~ ",
+        ])
+    }
+
+    #[test]
+    fn it_surrounds_ends() -> Result<()> {
+        do_test(vec![
+            "  00000",
+            "0|     ",
+            "0|  ^  ",
+            "0|     ",
+        ],
+        vec![
+            "  00000",
+            "0| ~~~ ",
+            "0| ~^~ ",
+            "0| ~ ~ ",
+        ])
+    }
+
+
 }
 
-#[test]
-fn it_surrounds_middles() {
-    let mut board = Board::new(&vec![
-        "  00000",
-        "0|     ",
-        "0|  -  ",
-        "0|     ",
-    ]);
 
-    let mut _changed = false;
-    surround_ships_with_water(&mut board, &mut _changed);
-    let expected = vec![
-        "  00000",
-        "0| ~~~ ",
-        "0|  -  ",
-        "0| ~~~ ",
-    ].iter().map(|x| x.to_string()).collect::<Vec<_>>();
-    assert_eq!(board.to_strings(), expected);        
-}
 
-#[test]
-fn it_surrounds_ends() {
-    let mut board = Board::new(&vec![
-        "  00000",
-        "0|     ",
-        "0|  ^  ",
-        "0|     ",
-    ]);
 
-    let mut _changed = false;
-    surround_ships_with_water(&mut board, &mut _changed);
-    let expected = vec![
-        "  00000",
-        "0| ~~~ ",
-        "0| ~^~ ",
-        "0| ~ ~ ",
-    ].iter().map(|x| x.to_string()).collect::<Vec<_>>();
-    assert_eq!(board.to_strings(), expected);        
-}

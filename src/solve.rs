@@ -1,4 +1,7 @@
+use itertools::Itertools;
+
 use crate::board::*;
+use crate::error::*;
 
 mod fill_unknown;
 mod surround_with_water;
@@ -8,7 +11,7 @@ mod only_place_it_can_go;
 mod specify_middles;
 mod surround_middles;
 
-pub fn solve(board : &mut Board) {
+pub fn solve(board: &mut Board) -> Result<bool> {
     let solvers = [
         self::fill_unknown::fill_with_water,
         self::fill_unknown::fill_with_ships,
@@ -22,22 +25,26 @@ pub fn solve(board : &mut Board) {
 
     board.print();
     loop {
-        let mut changed_in_loop = false;
+        let is_changed = solvers.iter()
+            .map(|solve| {
+                board.clear_dirty();
+                solve(board)?;
 
-        for solve in solvers.iter() {
-            let mut changed_by_solver = false;
-            solve(board, &mut changed_by_solver);
-            if changed_by_solver {
-                board.print();
-            }
+                if board.dirty() {
+                    board.print()
+                }
 
-            changed_in_loop = changed_in_loop || changed_by_solver;
-        }
+                // Compiler needs us to give a type annotation for the return type
+                let result: Result<bool> = Ok(board.dirty());
+                result
+            })
+            .fold_results(false, |acc, curr| acc || curr)?;
 
         // If none of the solvers made a change, it's time to stop
-        if !changed_in_loop {
+        if !is_changed {
             break;
         }
     }
-}
 
+    Ok(board.is_solved())
+}

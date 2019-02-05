@@ -1,9 +1,12 @@
-use crate::square::*;
 use crate::board::*;
+use crate::error::*;
+use crate::layout::*;
 use crate::neighbor::*;
+use crate::square::*;
+
 
 // Add ships before/after a middle
-pub fn surround_middle_with_ships(board: &mut Board, changed: &mut bool) {
+pub fn surround_middle_with_ships(board: &mut Board) -> Result<()> {
     let layout = board.layout;
     // Find all the middles, and identify which neighbors to set
     let coords_and_neighbors = layout.all_coordinates()
@@ -24,32 +27,44 @@ pub fn surround_middle_with_ships(board: &mut Board, changed: &mut bool) {
 
     for (coord, neighbors) in coords_and_neighbors {
         for neighbor in neighbors.into_iter() {
-            // panic if neighbor_coord is out of bounds, because it means there's no space on the board
-            // to place the neighboring ship squares. 
-            let neighbor_coord = coord.neighbor(*neighbor).unwrap();
+            // TODO: This can become a method on coord. We use it in multiple places.
+            //
+            // Convert from Option<Coord> to Result<Coord>, so we can return an error
+            // if neighbor is out of bounds. That would mean that, for example, the
+            // top end of a ship is on the last row of the board. No place to put the
+            // rest of the ship.
+            let neighbor_coord_result: Result<Coord> = coord.neighbor(*neighbor)
+                .ok_or_else(
+                    || format!("Square {:?} at {:?} wants a neighbor to the {:?}, but no place to put it.",
+                        board[coord], coord, neighbor).into()
+                    );
+            let neighbor_coord = neighbor_coord_result?;
 
             if !board[neighbor_coord].is_ship() {
-                board.set(neighbor_coord, Square::ShipSquare(ShipSquare::Any), changed);
+                board.set(neighbor_coord, Square::ShipSquare(ShipSquare::Any))?;
             }
         }
     }
+
+    Ok(())
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
 
-    fn do_test(before: Vec<&str>, after: Vec<&str>) {
+    fn do_test(before: Vec<&str>, after: Vec<&str>) -> Result<()> {
         let mut board = Board::new(&before);
         let expected = after.iter().map(|x| x.to_string()).collect::<Vec<_>>();
 
-        let mut _changed = false;
-        surround_middle_with_ships(&mut board, &mut _changed);
-        assert_eq!(board.to_strings(), expected);        
+        surround_middle_with_ships(&mut board)?;
+        assert_eq!(board.to_strings(), expected);     
+
+        Ok(())   
     }
 
     #[test]
-    fn it_specifies_vertical_middle_surrounded_by_water() {
+    fn it_specifies_vertical_middle_surrounded_by_water() -> Result<()> {
         do_test(vec![
             "  00200",
             "1|     ",
@@ -61,6 +76,6 @@ mod test {
             "0|  *  ",
             "0| ~|~ ",
             "0|  *  ", 
-        ]);
+        ])
     }
 }    
