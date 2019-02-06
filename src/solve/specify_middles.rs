@@ -14,15 +14,15 @@ pub fn specify_middle(board: &mut Board) -> Result<()> {
         .collect::<SmallVec<[_; 32]>>();
 
     for coord in coords {
-    	let is_surrounded_vert = [Neighbor::N, Neighbor::S].into_iter()
+    	let is_surrounded_vert = [Neighbor::N, Neighbor::S].iter()
     		.filter_map(|&neighbor| coord.neighbor(neighbor))
     		.any(|coord| board[coord] == Square::Water);
 
-    	let is_surrounded_horz = [Neighbor::E, Neighbor::W].into_iter()
+    	let is_surrounded_horz = [Neighbor::E, Neighbor::W].iter()
     		.filter_map(|&neighbor| coord.neighbor(neighbor))
     		.any(|coord| board[coord] == Square::Water);
 
-    	ensure!((is_surrounded_horz && is_surrounded_vert) == false, 
+    	ensure!(!(is_surrounded_horz && is_surrounded_vert), 
     		"Square at {:?} is an AnyMiddle, but it has neighbors to the north/south and east/west",
     		coord);
 

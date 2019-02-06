@@ -30,21 +30,16 @@ pub fn find_only_place_for_ships(board: &mut Board) -> Result<()> {
 fn find_only_place_for_ship(board: &mut Board, expected_ship: ExpectedShip, num_ships: usize) -> Result<()> {
     let layout = board.layout;
     let placements = layout.possible_heads_for_ship(expected_ship)
-        .filter_map(|ship_head| {
+        .filter(|ship_head| {
             let ship = ship_head.to_ship(expected_ship);
 
             if let Some(num_ship_squares) = can_fit_ship_at_coord(board, ship) {
-                if would_ship_at_coord_be_clear_of_other_ships(board, ship) &&  
-                   enough_free_ships_on_constant_axis(board, ship, num_ship_squares) &&
-                   enough_free_ships_on_incrementing_axis(board, ship) {
-                    Some(ship_head)
-                }
-                else {
-                    None
-                }
+                would_ship_at_coord_be_clear_of_other_ships(board, ship)   
+                && enough_free_ships_on_constant_axis(board, ship, num_ship_squares)
+                && enough_free_ships_on_incrementing_axis(board, ship)
             }
             else {
-                None
+                false
             }
         })
         .collect::<Vec<_>>();
@@ -210,7 +205,7 @@ fn would_ship_at_coord_be_clear_of_other_ships<'a>(board: &Board, ship: Ship<'a>
             (is_first_square,  first_square_neighbors),
             (is_middle_square, middle_square_neighbors),
             (is_last_square,   last_square_neighbors),
-        ].into_iter()
+        ].iter()
         .filter_map(|(is_used, neighbors)|
             // is_used means "do we want to check these neighbors"
             if *is_used { Some(neighbors) } else { None }

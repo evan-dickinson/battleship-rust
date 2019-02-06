@@ -10,8 +10,8 @@ pub struct ExpectedShip {
 
 impl ExpectedShip {
     // Iterate over indexes from 0 .. size
-    pub fn square_indexes(&self) -> impl Iterator<Item = usize> {
-        (0 .. self.size).into_iter()
+    pub fn square_indexes(self) -> impl Iterator<Item = usize> {
+        0 .. self.size
     }
 }
 
@@ -65,15 +65,15 @@ impl<'a> Ship<'a> {
 
     // Iterate over indexes from 0 .. size
     pub fn square_indexes(&self) -> impl Iterator<Item = usize> {
-        (0 .. self.size).into_iter()
+        0 .. self.size
     }
 
     pub fn is_in_bounds(&self) -> bool {
         let last_square_idx = self.size - 1;
         let last_square = self.head.origin.offset(last_square_idx, self.head.incrementing_axis);
-        let is_in_bounds = last_square.is_some();
 
-        is_in_bounds
+        // offset() only returns Some(_) when the coord is in bounds
+        last_square.is_some() 
     }
 
     // If a ship with this size & origin would be in bounds, return an iterator of the coordinates.

@@ -26,7 +26,7 @@ pub fn surround_middle_with_ships(board: &mut Board) -> Result<()> {
         .collect::<Vec<_>>();
 
     for (coord, neighbors) in coords_and_neighbors {
-        for neighbor in neighbors.into_iter() {
+        for neighbor in neighbors.iter() {
             // TODO: This can become a method on coord. We use it in multiple places.
             //
             // Convert from Option<Coord> to Result<Coord>, so we can return an error

@@ -29,7 +29,7 @@ impl ShipSquare {
             HorizontalMiddle,
             AnyMiddle,
             Dot
-        ].into_iter().cloned()
+        ].iter().cloned()
     }
 
     // For a given ship type, which neigbors should be set to water
@@ -38,7 +38,7 @@ impl ShipSquare {
         match self {
             Any       => [
                 NW, NE, SW, SE,
-            ].into_iter().cloned().collect(),
+            ].iter().cloned().collect(),
 
             Dot       => Neighbor::all_neighbors(),
 
@@ -50,15 +50,15 @@ impl ShipSquare {
             VerticalMiddle => [
                 NE, E, SE,
                 NW, W, SW,
-            ].into_iter().cloned().collect(),
+            ].iter().cloned().collect(),
             HorizontalMiddle => [
                 NW, N, NE,
                 SW, S, SE,
-            ].into_iter().cloned().collect(),
+            ].iter().cloned().collect(),
             AnyMiddle => [
                 NW, NE,
                 SW, SE,
-            ].into_iter().cloned().collect(),
+            ].iter().cloned().collect(),
         }
     }
 

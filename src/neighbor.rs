@@ -18,7 +18,7 @@ impl Neighbor {
             Neighbor::NW,
         ];
 
-        all_neighbors.into_iter().cloned().collect()
+        all_neighbors.iter().cloned().collect()
     }
 
     pub fn all_except(exclude: Neighbor) -> HashSet<Neighbor> {

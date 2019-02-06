@@ -217,7 +217,7 @@ impl Layout {
             &[Axis::Row, Axis::Col][..]
         };
 
-        axes.into_iter()
+        axes.iter()
             .cloned()
             .map(move |incrementing_axis| {
                 // For each incrementing_axis, produce an iterator that generates
