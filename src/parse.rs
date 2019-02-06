@@ -355,15 +355,11 @@ fn make_board(ships_to_find_vec: Option<Vec<ShipToFind>>,
 	Vec<usize>, rows: Vec<Row>) -> Board {
 
 	// Convert ships_to_find from vector to hash map
-	let ships_to_find;
-	if let Some(vec) = ships_to_find_vec {
-		ships_to_find = vec.iter()
-            .map(|ship| (ship.size, ship.count))
-            .collect::<HashMap<_, _>>();
-	}
-	else {
-		ships_to_find = HashMap::new();
-	}
+    let ships_to_find = ships_to_find_vec
+        .unwrap_or_else(|| vec![])
+        .iter()
+        .map(|ship| (ship.size, ship.count))
+        .collect::<HashMap<_, _>>();
 
 	// Ensure all rows have the same number of cols
 	let num_cols = ships_remaining_for_col.len();
