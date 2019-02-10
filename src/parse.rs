@@ -67,109 +67,94 @@ mod test_ships_to_find {
     use super::*;
 
     #[test]
-    fn it_parses_individual_ship() {
+    fn it_parses_individual_ship() -> Result<(), nom::Err<&'static str>> {
     	let text = "4sq x 2";
 
-    	let result = ship_to_find(&text);
+    	let (remaining, ship) = ship_to_find(&text)?;
+        assert_eq!(remaining, "");
 
-    	if let Ok(("", ship)) = result {
-    		assert_eq!(ship.size, 4);
-    		assert_eq!(ship.count, 2);    		
-    	}
-    	else {
-    		println!("{:?}", result);
-    		assert!(false);
-    	}    	
+        assert_eq!(ship.size, 4);
+        assert_eq!(ship.count, 2);          
+
+        Ok(())
     }
 
     #[test]
-    fn it_parses_1_ship() {
+    fn it_parses_1_ship() -> Result<(), nom::Err<&'static str>> {
     	let text = "ships: 5sq x 1.\n";
 
-    	let result = ships_to_find(&text);
+    	let (remaining, ships) = ships_to_find(&text)?;
+        assert_eq!(remaining, "");
 
-    	if let Ok(("", ships)) = result {
-	    	assert_eq!(ships.len(), 1);
+        assert_eq!(ships.len(), 1);
 
-	    	assert_eq!(ships[0].size, 5);
-	    	assert_eq!(ships[0].count, 1);
-    	}
-    	else {
-    		println!("{:?}", result);
-    		assert!(false);
-    	}  
+        assert_eq!(ships[0].size, 5);
+        assert_eq!(ships[0].count, 1);
+
+        Ok(())
     }
 
     #[test]
-    fn it_parses_2_ships() {
+    fn it_parses_2_ships() -> Result<(), nom::Err<&'static str>>  {
     	let text = "ships: 5sq x 1, 4sq x 2.\n";
 
-    	let result = ships_to_find(&text);
+    	let (remaining, ships) = ships_to_find(&text)?;
+        assert_eq!(remaining, "");
 
-    	if let Ok(("", ships)) = result {
-	    	assert_eq!(ships.len(), 2);
+        assert_eq!(ships.len(), 2);
 
-	    	assert_eq!(ships[0].size, 5);
-	    	assert_eq!(ships[0].count, 1);
+        assert_eq!(ships[0].size, 5);
+        assert_eq!(ships[0].count, 1);
 
-	    	assert_eq!(ships[1].size, 4);
-	    	assert_eq!(ships[1].count, 2);
-    	}
-    	else {
-    		println!("{:?}", result);
-    		assert!(false);
-    	}  
+        assert_eq!(ships[1].size, 4);
+        assert_eq!(ships[1].count, 2);
+
+        Ok(())
     }
 
     #[test]
-    fn it_parses_5_ships() {
+    fn it_parses_5_ships() -> Result<(), nom::Err<&'static str>>  {
         let text = "ships: 5sq x 1, 4sq x 1, 3sq x 2, 2sq x 3, 1sq x 4.\n";
 
-        let result = ships_to_find(&text);
+        let (remaining, ships) = ships_to_find(&text)?;
+        assert_eq!(remaining, "");
 
-        if let Ok(("", ships)) = result {
-            assert_eq!(ships.len(), 5);
+        assert_eq!(ships.len(), 5);
 
-            assert_eq!(ships[0].size, 5);
-            assert_eq!(ships[0].count, 1);
+        assert_eq!(ships[0].size, 5);
+        assert_eq!(ships[0].count, 1);
 
-            assert_eq!(ships[1].size, 4);
-            assert_eq!(ships[1].count, 1);
+        assert_eq!(ships[1].size, 4);
+        assert_eq!(ships[1].count, 1);
 
-            assert_eq!(ships[2].size, 3);
-            assert_eq!(ships[2].count, 2);   
+        assert_eq!(ships[2].size, 3);
+        assert_eq!(ships[2].count, 2);   
 
-            assert_eq!(ships[3].size, 2);
-            assert_eq!(ships[3].count, 3);   
+        assert_eq!(ships[3].size, 2);
+        assert_eq!(ships[3].count, 3);   
 
-            assert_eq!(ships[4].size, 1);
-            assert_eq!(ships[4].count, 4);            
-        }
-        else {
-            println!("{:?}", result);
-            assert!(false);
-        }  
+        assert_eq!(ships[4].size, 1);
+        assert_eq!(ships[4].count, 4);     
+
+        Ok(())       
     }    
 
     #[test]
-    fn it_parses_ships_on_multiple_lines() {
+    fn it_parses_ships_on_multiple_lines() -> Result<(), nom::Err<&'static str>> {
     	let text = "ships: 5sq x 1,\n\t4sq x 2.\n";
 
-    	let result = ships_to_find(&text);
+    	let (remaining, ships) = ships_to_find(&text)?;
+        assert_eq!(remaining, "");
 
-    	if let Ok(("", ships)) = result {
-	    	assert_eq!(ships.len(), 2);
+    	assert_eq!(ships.len(), 2);
 
-	    	assert_eq!(ships[0].size, 5);
-	    	assert_eq!(ships[0].count, 1);
+    	assert_eq!(ships[0].size, 5);
+    	assert_eq!(ships[0].count, 1);
 
-	    	assert_eq!(ships[1].size, 4);
-	    	assert_eq!(ships[1].count, 2);
-    	}
-    	else {
-    		println!("{:?}", result);
-    		assert!(false);
-    	}  
+    	assert_eq!(ships[1].size, 4);
+    	assert_eq!(ships[1].count, 2);
+
+        Ok(())
     }
 
 }
@@ -203,22 +188,20 @@ mod column_header_tests {
     use super::*;
 
     #[test]
-    fn it_parses_header() {
+    fn it_parses_header() -> Result<(), nom::Err<&'static str>> {
     	let text = "  12345\n";
-    	let result = header(text);
 		
-    	if let Ok((_, counts)) = result {
-    		assert_eq!(counts[0], 1);
-    		assert_eq!(counts[1], 2);
-    		assert_eq!(counts[2], 3);
-    		assert_eq!(counts[3], 4);
-    		assert_eq!(counts[4], 5);
-    		assert_eq!(5, counts.len());
-    	}
-    	else {
-    		println!("{:?}", result);
-    		assert!(false);
-    	}
+        let (remaining, counts) = header(text)?;
+        assert_eq!(remaining, "");
+
+        assert_eq!(counts[0], 1);
+        assert_eq!(counts[1], 2);
+        assert_eq!(counts[2], 3);
+        assert_eq!(counts[3], 4);
+        assert_eq!(counts[4], 5);
+        assert_eq!(5, counts.len());
+
+        Ok(())
    	}
 }   	
 
@@ -236,7 +219,7 @@ struct Row {
 fn square_from_char(input: &str) -> Result<Square, u8> {
 	let c = input.chars().next().unwrap();
 
-	return match Square::from_char(c) {
+	match Square::from_char(c) {
 		Some(square) => Ok(square),
 		None		 => Err(0),
 	}
@@ -299,39 +282,32 @@ mod board_body_tests {
     }
 
     #[test]
-    fn it_parses_squares() {
+    fn it_parses_squares() -> Result<(), nom::Err<&'static str>>  {
     	let text = "~~ \n"; // need a token that squares() doesn't recognize, so it knows when to stop
-    	let result = squares(text);
+    	let (remaining, squares) = squares(text)?;
+        assert_eq!(remaining, "\n");
+        assert_eq!(Square::Water, squares[0]);
+        assert_eq!(Square::Water, squares[1]);
+        assert_eq!(Square::Unknown, squares[2]);
+        assert_eq!(3, squares.len());
 
-    	if let Ok((_, ships)) = result {
-    		assert_eq!(Square::Water, ships[0]);
-    		assert_eq!(Square::Water, ships[1]);
-    		assert_eq!(Square::Unknown, ships[2]);
-    		assert_eq!(3, ships.len());
-    	}
-    	else {
-    		println!("{:?}", result);
-    		assert!(false);
-    	}
+        Ok(())
     }
 
     #[test]
-    fn it_parses_row() {
+    fn it_parses_row() -> Result<(), nom::Err<&'static str>>  {
 		let text = "1|~ ~\n";
-		let result = row(text);
+		let (remaining, row) = row(text)?;
+        assert_eq!(remaining, "");
 
-    	if let Ok(("", row)) = result {
-    		assert_eq!(row.ships_remaining, 1);
+        assert_eq!(row.ships_remaining, 1);
 
-    		assert_eq!(row.squares.len(), 3);
-    		assert_eq!(row.squares[0], Square::Water);
-    		assert_eq!(row.squares[1], Square::Unknown);
-    		assert_eq!(row.squares[2], Square::Water);
-    	}
-    	else {
-    		println!("{:?}", result);
-    		assert!(false);
-    	}
+        assert_eq!(row.squares.len(), 3);
+        assert_eq!(row.squares[0], Square::Water);
+        assert_eq!(row.squares[1], Square::Unknown);
+        assert_eq!(row.squares[2], Square::Water);
+
+        Ok(())
     }
 }
 
