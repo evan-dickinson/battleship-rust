@@ -1,4 +1,3 @@
-#![allow(clippy::needless_return)]
 #![allow(clippy::double_comparisons)] // parse! macros trigger this
 
 use std::collections::HashMap;
@@ -354,16 +353,16 @@ fn make_board(ships_to_find_vec: Option<Vec<ShipToFind>>,
 		.map(|row| row.squares.clone())
 		.collect::<Vec<_>>();
 
-	return Board::new_from_data(
+	Board::new_from_data(
 		squares,
 		ships_remaining_for_row,
 		ships_remaining_for_col,
 		ships_to_find
-	);
+	)
 }
 
 pub fn parse_board(text: &str) -> Board {
-	return match board(text) {
+	match board(text) {
 		Ok(("", board)) => board,
 		Ok((_,  _))     => panic!("Had leftover information"),
 		Err(_)          => panic!("Unable to parse the board"),
