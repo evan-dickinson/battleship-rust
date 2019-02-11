@@ -2,8 +2,8 @@
 
 use std::collections::HashMap;
 
-use crate::square::*;
 use crate::board::*;
+use crate::square::*;
 
 use nom::*;
 
@@ -20,7 +20,7 @@ fn is_digit(c: char) -> bool {
   }
 }
 
-fn int_from_digit(input: &str) -> Result<usize, std::num::ParseIntError> {
+fn int_from_digit(input: &str) -> std::result::Result<usize, std::num::ParseIntError> {
   usize::from_str_radix(input, 10)
 }
 
@@ -66,7 +66,7 @@ mod test_ships_to_find {
     use super::*;
 
     #[test]
-    fn it_parses_individual_ship() -> Result<(), nom::Err<&'static str>> {
+    fn it_parses_individual_ship() -> std::result::Result<(), nom::Err<&'static str>> {
     	let text = "4sq x 2";
 
     	let (remaining, ship) = ship_to_find(&text)?;
@@ -79,7 +79,7 @@ mod test_ships_to_find {
     }
 
     #[test]
-    fn it_parses_1_ship() -> Result<(), nom::Err<&'static str>> {
+    fn it_parses_1_ship() -> std::result::Result<(), nom::Err<&'static str>> {
     	let text = "ships: 5sq x 1.\n";
 
     	let (remaining, ships) = ships_to_find(&text)?;
@@ -94,7 +94,7 @@ mod test_ships_to_find {
     }
 
     #[test]
-    fn it_parses_2_ships() -> Result<(), nom::Err<&'static str>>  {
+    fn it_parses_2_ships() -> std::result::Result<(), nom::Err<&'static str>>  {
     	let text = "ships: 5sq x 1, 4sq x 2.\n";
 
     	let (remaining, ships) = ships_to_find(&text)?;
@@ -112,7 +112,7 @@ mod test_ships_to_find {
     }
 
     #[test]
-    fn it_parses_5_ships() -> Result<(), nom::Err<&'static str>>  {
+    fn it_parses_5_ships() -> std::result::Result<(), nom::Err<&'static str>>  {
         let text = "ships: 5sq x 1, 4sq x 1, 3sq x 2, 2sq x 3, 1sq x 4.\n";
 
         let (remaining, ships) = ships_to_find(&text)?;
@@ -139,7 +139,7 @@ mod test_ships_to_find {
     }    
 
     #[test]
-    fn it_parses_ships_on_multiple_lines() -> Result<(), nom::Err<&'static str>> {
+    fn it_parses_ships_on_multiple_lines() -> std::result::Result<(), nom::Err<&'static str>> {
     	let text = "ships: 5sq x 1,\n\t4sq x 2.\n";
 
     	let (remaining, ships) = ships_to_find(&text)?;
@@ -187,7 +187,7 @@ mod column_header_tests {
     use super::*;
 
     #[test]
-    fn it_parses_header() -> Result<(), nom::Err<&'static str>> {
+    fn it_parses_header() -> std::result::Result<(), nom::Err<&'static str>> {
     	let text = "  12345\n";
 		
         let (remaining, counts) = header(text)?;
@@ -215,7 +215,7 @@ struct Row {
 }
 
 
-fn square_from_char(input: &str) -> Result<Square, u8> {
+fn square_from_char(input: &str) -> std::result::Result<Square, u8> {
 	let c = input.chars().next().unwrap();
 
 	match Square::from_char(c) {
@@ -281,7 +281,7 @@ mod board_body_tests {
     }
 
     #[test]
-    fn it_parses_squares() -> Result<(), nom::Err<&'static str>>  {
+    fn it_parses_squares() -> std::result::Result<(), nom::Err<&'static str>>  {
     	let text = "~~ \n"; // need a token that squares() doesn't recognize, so it knows when to stop
     	let (remaining, squares) = squares(text)?;
         assert_eq!(remaining, "\n");
@@ -294,7 +294,7 @@ mod board_body_tests {
     }
 
     #[test]
-    fn it_parses_row() -> Result<(), nom::Err<&'static str>>  {
+    fn it_parses_row() -> std::result::Result<(), nom::Err<&'static str>>  {
 		let text = "1|~ ~\n";
 		let (remaining, row) = row(text)?;
         assert_eq!(remaining, "");
@@ -315,7 +315,7 @@ mod board_body_tests {
 //
 // Parse the entire board
 
-named!(board<&str, Board>,
+named!(board<&str, crate::error::Result<Board>>,
 	do_parse!(
 		ships_to_find:           opt!(ships_to_find) >>
 		ships_remaining_for_col: header >>
@@ -325,9 +325,11 @@ named!(board<&str, Board>,
 	)
 );
 
-fn make_board(ships_to_find_vec: Option<Vec<ShipToFind>>, 
-	ships_remaining_for_col: 
-	Vec<usize>, rows: Vec<Row>) -> Board {
+fn make_board(
+    ships_to_find_vec: Option<Vec<ShipToFind>>, 
+	ships_remaining_for_col: Vec<usize>, 
+    rows: Vec<Row>) 
+    -> crate::error::Result<Board> {
 
 	// Convert ships_to_find from vector to hash map
     let ships_to_find = ships_to_find_vec
@@ -342,7 +344,7 @@ fn make_board(ships_to_find_vec: Option<Vec<ShipToFind>>,
 		row.squares.len() == num_cols
 	});
 	if !consistent_num_cols {
-		panic!("Rows have inconsistent number of columns");
+		bail!("Rows have inconsistent number of columns");
 	}
 
 	let ships_remaining_for_row = rows.iter()
@@ -353,19 +355,21 @@ fn make_board(ships_to_find_vec: Option<Vec<ShipToFind>>,
 		.map(|row| row.squares.clone())
 		.collect::<Vec<_>>();
 
-	Board::new_from_data(
+	let board = Board::new_from_data(
 		squares,
 		ships_remaining_for_row,
 		ships_remaining_for_col,
 		ships_to_find
-	)
+	);
+
+    Ok(board)
 }
 
-pub fn parse_board(text: &str) -> Board {
+pub fn parse_board(text: &str) -> crate::error::Result<Board> {
 	match board(text) {
 		Ok(("", board)) => board,
-		Ok((_,  _))     => panic!("Had leftover information"),
-		Err(_)          => panic!("Unable to parse the board"),
+		Ok((_,  _))     => bail!("Had leftover information"),
+		Err(_)          => bail!("Unable to parse the board"),
 	}
 }
 
@@ -374,7 +378,7 @@ mod board_tests {
     use super::*;
 
     #[test]
-    fn it_parses_board_no_ships_to_find() {
+    fn it_parses_board_no_ships_to_find() -> crate::error::Result<()> {
     	let text = [
     		"  123",
     		"1|~  ",
@@ -382,17 +386,19 @@ mod board_tests {
     		"."
     	].join("\n");
 
-    	let board = parse_board(&text);
+    	let board = parse_board(&text)?;
 
     	assert_eq!(board.layout.num_cols, 3);
     	assert_eq!(board.layout.num_rows, 2);
 
         let coord = board.layout.coord(2, 1);
     	assert_eq!(board[coord], Square::ShipSquare(ShipSquare::Any));
+
+        Ok(())
     }
 
     #[test]
-    fn it_parses_board_with_ships_to_find() {
+    fn it_parses_board_with_ships_to_find() -> crate::error::Result<()> {
     	let text = [
     		"ships: 2sq x 1, 1sq x 3.",
     		"  123",
@@ -401,7 +407,7 @@ mod board_tests {
     		"."
     	].join("\n");
 
-    	let board = parse_board(&text);
+    	let board = parse_board(&text)?;
 
     	assert_eq!(board.layout.num_cols, 3);
     	assert_eq!(board.layout.num_rows, 2);
@@ -412,6 +418,8 @@ mod board_tests {
     	assert_eq!(board.num_remaining_ships_to_find(3.into()), 0);
     	assert_eq!(board.num_remaining_ships_to_find(2.into()), 1);
     	assert_eq!(board.num_remaining_ships_to_find(1.into()), 3);
+
+        Ok(())
     }    
 }
 

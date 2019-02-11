@@ -39,7 +39,7 @@ mod test {
 	use super::*;
 
 	fn do_test(before: Vec<&str>, after: Vec<&str>) -> Result<()> {
-		let mut board = Board::new(&before);
+		let mut board = Board::new(&before)?;
 		let expected = after.iter().map(|x| x.to_string()).collect::<Vec<_>>();
 
 	    place_ships_next_to_ends(&mut board)?;
@@ -63,16 +63,18 @@ mod test {
 	}
 
 	#[test]
-	fn it_errors_if_no_place_for_a_ship() {
+	fn it_errors_if_no_place_for_a_ship() -> Result<()> {
 	    let before = vec![
 	        "  00100",
 	        "1|  v  ",
 	    ];
 
-		let mut board = Board::new(&before);
+		let mut board = Board::new(&before)?;
 	    let result = place_ships_next_to_ends(&mut board);
 
 	    assert_eq!(result.is_err(), true);
+
+	    Ok(())
 	}
 
 	#[test]

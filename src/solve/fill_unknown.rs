@@ -41,7 +41,7 @@ fn it_fills_with_ships() -> Result<()> {
         "2|    ", // don't change, unknown != ships remaining
         "2|~  ~", // do change, unknown == ships remaining
         "0|~~~~", // don't barf
-    ]);
+    ])?;
 
     let _ = fill_with_ships(&mut board)?;
 
@@ -66,7 +66,7 @@ mod test {
 	        "  0011",
 	        "0|~*  ",
 	        "2|~*  ",
-	    ]);
+	    ])?;
 
 	    let _ = fill_with_water(&mut board)?;
 

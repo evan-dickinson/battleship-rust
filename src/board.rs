@@ -21,7 +21,7 @@ impl Board {
     //
     // Board creation
 
-    pub fn new(text_lines : &[&str]) -> Self {        
+    pub fn new(text_lines : &[&str]) -> Result<Self> {        
         let mut text = text_lines.join("\n");
         text.push_str("\n.");
 
@@ -298,7 +298,7 @@ mod test {
 	        "  001",
 	        "0|   ",
 	        "1|~  ",
-	    ]);
+	    ])?;
         let layout = board.layout;
 
 	    // Set a squre to its current value => dirty is false
@@ -315,20 +315,24 @@ mod test {
 	}
 
     #[test]
-    fn it_returns_num_rows() {
-        let board = make_test_board();
+    fn it_returns_num_rows() -> Result<()> {
+        let board = make_test_board()?;
         assert_eq!(board.layout.num_rows, 2);
+
+        Ok(())
     }
 
     #[test]
-    fn it_returns_num_cols() {
-        let board = make_test_board();
+    fn it_returns_num_cols() -> Result<()> {
+        let board = make_test_board()?;
         assert_eq!(board.layout.num_cols, 4);
+
+        Ok(())
     }    
 
     #[test]
     fn it_accesses_with_index() -> Result<()> {
-        let mut board = make_test_board();
+        let mut board = make_test_board()?;
         let layout = board.layout;
 
         let coord1 = layout.coord(0, 1);
@@ -348,8 +352,8 @@ mod test {
 
     // TODO: This test should move to layout
     #[test]
-    fn it_accesses_col() {
-        let board = make_test_board();
+    fn it_accesses_col() -> Result<()> {
+        let board = make_test_board()?;
         // col1 needs to be its own variable, for lifetime reasons
         let col1 = board.layout.col(1);
         let mut coords = col1.coords();
@@ -361,16 +365,18 @@ mod test {
         assert_eq!(coords.next(), Some(expected_coord));
 
         assert_eq!(coords.next(), None);
+
+        Ok(())
     }
 
     #[test]
-    fn it_counts_ship_squares_remaining() {
+    fn it_counts_ship_squares_remaining() -> Result<()> {
         let board = Board::new(&vec![
             "  0123", 
             "9|    ", 
             "8|    ",
             "7|    ",
-        ]);
+        ])?;
 
         let row0 = board.layout.row(0);
         let row1 = board.layout.row(1);
@@ -381,11 +387,13 @@ mod test {
         assert_eq!(board.ship_squares_remaining(row1), 8);
         assert_eq!(board.ship_squares_remaining(col0), 0);
         assert_eq!(board.ship_squares_remaining(col2), 2);     
+
+        Ok(())
     }
 
     #[test]
     fn it_adjusts_ship_squares_remaining_after_set() -> Result<()> {
-        let mut board = make_test_board();
+        let mut board = make_test_board()?;
         let layout = board.layout;
         let coord = layout.coord(0, 1);
 
@@ -414,14 +422,14 @@ mod test {
 
     // TODO: This test should move to layout
     #[test]
-    fn it_accesses_col_contents() {
+    fn it_accesses_col_contents() -> Result<()> {
         let board = Board::new(&vec![
             "  000",
             "0| ^ ",
             "0| | ",
             "0| v ",
             "0| ~ ",
-        ]);
+        ])?;
         let layout = board.layout;
 
         let col = layout.col(1);
@@ -446,6 +454,8 @@ mod test {
         assert_eq!(board[expected_coord], Square::Water);
 
         assert_eq!(col_coords.next(), None);
+
+        Ok(())
     }
 }
 
@@ -454,7 +464,7 @@ mod test_find_ships {
     use super::*;
 
     #[test]
-    fn it_finds_ship() {
+    fn it_finds_ship() -> Result<()> {
         let board = Board::new(&vec![
             "  000",
             "0|  ^",
@@ -463,7 +473,7 @@ mod test_find_ships {
             "0|  v",
             "0|   ",
             "0|<> ",
-        ]);    
+        ])?;
 
         // Find vertical ship
         let origin = board.layout.coord(2, 0);
@@ -500,11 +510,13 @@ mod test_find_ships {
         let found_ship = board.ship_is_found(
             Ship { size: 5, head: ShipHead {origin, incrementing_axis: Axis::Row }}
             );
-        assert_eq!(found_ship, false);                
+        assert_eq!(found_ship, false);     
+
+        Ok(())           
     }
 
     #[test]
-    fn it_counts_ships() {
+    fn it_counts_ships() -> Result<()> {
         let board = Board::new(&vec![
             "  00000",
             "0|  ^ ^",
@@ -512,7 +524,7 @@ mod test_find_ships {
             "0|• | |",
             "0|  v v",
             "0|     ",
-        ]);
+        ])?;
 
         let count = board.count_found_ships(1.into());
         assert_eq!(count, 1);
@@ -524,7 +536,9 @@ mod test_find_ships {
         assert_eq!(count, 2);      
 
         let count = board.count_found_ships(5.into());
-        assert_eq!(count, 0);              
+        assert_eq!(count, 0);        
+
+        Ok(())      
     }
 }
 

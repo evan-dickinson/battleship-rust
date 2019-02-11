@@ -141,7 +141,7 @@ fn run() -> Result<()> {
         "3|        ",
     ];
 
-    let mut board = Board::new(&_puzzle8);
+    let mut board = Board::new(&_puzzle8)?;
 
     let is_solved = solve(&mut board)?;
 

@@ -368,13 +368,13 @@ mod test_only_place_it_can_go {
     use super::*;
 
     #[test]
-    fn test_enough_free_ships_on_constant_axis() {
+    fn test_enough_free_ships_on_constant_axis() -> Result<()> {
         let board = Board::new(&vec![
             "  0000", // deliberate: Don't have enough ships on incrementing axis
             "3|    ",
             "0|    ",
             "2| *  ",
-        ]);
+        ])?;
 
         // Enough space - No existing ships
         let origin = board.layout.coord(0, 0);
@@ -393,14 +393,16 @@ mod test_only_place_it_can_go {
         let ship = Ship::new(origin, Axis::Col, 4);
         let result = enough_free_ships_on_constant_axis(&board, ship, 0);
         assert_eq!(result, false);   
+
+        Ok(())
     }
 
     #[test]
-    fn test_enough_free_ships_on_incrementing_axis() {
+    fn test_enough_free_ships_on_incrementing_axis() -> Result<()> {
         let board = Board::new(&vec![
             "  1110", 
             "0|    ", // deliberate: Don't have enough ships on constant axis
-        ]);
+        ])?;
 
         // Enough space - No existing ships
         let origin = board.layout.coord(0, 0);
@@ -417,24 +419,26 @@ mod test_only_place_it_can_go {
         let board = Board::new(&vec![
             "  1010", 
             "0| *  ", // deliberate: Don't have enough ships on constant axis
-        ]);   
+        ])?;   
 
         // Enough space - Includes an existing ship
         let origin = board.layout.coord(0, 0);
         let ship = Ship::new(origin, Axis::Col, 3);
         let result = enough_free_ships_on_incrementing_axis(&board, ship);
         assert_eq!(result, true);
+
+        Ok(())
     }    
 
     #[test]
-    fn test_would_ship_at_coord_be_clear_of_other_ships() {
+    fn test_would_ship_at_coord_be_clear_of_other_ships() -> Result<()> {
         let board = Board::new(&vec![
             "  0000",
             "0|    ",
             "0|~ ~ ",
             "0|< ~*",
             "0|~~~v",
-        ]);    
+        ])?;    
 
         // Ship here would not touch another ship
         let coord = board.layout.coord(0, 0);
@@ -453,18 +457,20 @@ mod test_only_place_it_can_go {
         let ship = Ship::new(coord, Axis::Row, 2);
         let result = would_ship_at_coord_be_clear_of_other_ships(&board, ship);
         assert_eq!(result, false);
+
+        Ok(())
     }
 
 
     #[test]
-    fn test_can_fit_ship_at_coord() {
+    fn test_can_fit_ship_at_coord() -> Result<()> {
         let board = Board::new(&vec![
             "  0000",
             "0|    ",
             "0|~ ~ ",
             "0|< ~*",
             "0|~~~v",
-        ]);     
+        ])?;     
 
         // Can place it: All squares empty (non-dot ship)
         let origin = board.layout.coord(0, 0);
@@ -500,21 +506,25 @@ mod test_only_place_it_can_go {
         let origin = board.layout.coord(0, 2);
         let ship = Ship::new(origin, Axis::Col, 1); // to fit, should be ::Col, 2
         let result = can_fit_ship_at_coord(&board, ship);
-        assert_eq!(result, None);        
+        assert_eq!(result, None);
+
+        Ok(())        
     }
 
     #[test]
-    fn test_can_fit_ship_doesnt_count_completed_ships() {
+    fn test_can_fit_ship_doesnt_count_completed_ships() -> Result<()> {
         let board = Board::new(&vec![
             "  1111",
             "1|<-->",
-        ]);
+        ])?;
 
         // Cannot place it: The entire ship is present
         let coord = board.layout.coord(0, 0);
         let ship = Ship::new(coord, Axis::Col, 4);
         let result = can_fit_ship_at_coord(&board, ship);
         assert_eq!(result, None);
+
+        Ok(())
     }
 
     #[test]
@@ -525,7 +535,7 @@ mod test_only_place_it_can_go {
             "1| ~ ",
             "0|• *",
             "0|  v",
-        ]);        
+        ])?;
         let layout = board.layout;
 
         let origin = layout.coord(2, 0);
@@ -546,7 +556,7 @@ mod test_only_place_it_can_go {
     }
 
     fn do_test(before: Vec<&str>, after: Vec<&str>) -> Result<()> {
-        let mut board = Board::new(&before);
+        let mut board = Board::new(&before)?;
         let expected = after.iter().map(|x| x.to_string()).collect::<Vec<_>>();
 
         find_only_place_for_ships(&mut board)?;

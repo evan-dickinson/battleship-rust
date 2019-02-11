@@ -1,5 +1,6 @@
 use std::fmt;
 
+use crate::error::*;
 use crate::neighbor::*;
 use crate::ship::*;
 
@@ -254,8 +255,8 @@ mod layout_tests {
     use super::*;
 
     #[test]
-    fn it_returns_all_coordinates() {
-        let board = make_test_board();
+    fn it_returns_all_coordinates() -> Result<()> {
+        let board = make_test_board()?;
         let coords : HashSet<_> = board.layout.all_coordinates().collect();
 
         assert_eq!(coords.len(), 8);
@@ -275,6 +276,8 @@ mod layout_tests {
             assert!(coords.contains(&expected), 
                 "Should have contained {:?}", expected);
         }
+
+        Ok(())
     }
 
     #[test] 

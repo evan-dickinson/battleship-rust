@@ -54,7 +54,7 @@ mod test {
     use super::*;
 
     fn do_test(before: Vec<&str>, after: Vec<&str>) -> Result<()> {
-        let mut board = Board::new(&before);
+        let mut board = Board::new(&before)?;
         let expected = after.iter().map(|x| x.to_string()).collect::<Vec<_>>();
 
         surround_middle_with_ships(&mut board)?;
