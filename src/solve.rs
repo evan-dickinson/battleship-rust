@@ -10,6 +10,7 @@ mod place_at_ends;
 mod only_place_it_can_go;
 mod specify_middles;
 mod surround_middles;
+mod enough_space_for_middle;
 
 pub fn solve(board: &mut Board) -> Result<bool> {
     let solvers = [
@@ -21,6 +22,7 @@ pub fn solve(board: &mut Board) -> Result<bool> {
         self::only_place_it_can_go::find_only_place_for_ships,
         self::specify_middles::specify_middle,
         self::surround_middles::surround_middle_with_ships,
+        self::enough_space_for_middle::enough_space_for_middle,
     ];
 
     board.print();

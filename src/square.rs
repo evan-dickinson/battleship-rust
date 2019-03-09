@@ -68,6 +68,7 @@ impl ShipSquare {
         let water_neighbors = self.water_neighbors();
 
         // Any squre that's not water is a ship
+        // TODO: Not true for AnyMiddle!
         all_neighbors.difference(&water_neighbors).cloned().collect()
     }
 }

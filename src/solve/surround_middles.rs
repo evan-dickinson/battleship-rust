@@ -64,17 +64,17 @@ mod test {
     }
 
     #[test]
-    fn it_specifies_vertical_middle_surrounded_by_water() -> Result<()> {
+    fn it_puts_ships_next_to_vertical_middle() -> Result<()> {
         do_test(vec![
             "  00200",
             "1|     ",
-            "0| ~|~ ",
+            "0|  |  ",
             "1|     ",
         ],
         vec![
             "  00000",
             "0|  *  ",
-            "0| ~|~ ",
+            "0|  |  ",
             "0|  *  ", 
         ])
     }

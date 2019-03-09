@@ -141,7 +141,21 @@ fn run() -> Result<()> {
         "3|        ",
     ];
 
-    let mut board = Board::new(&_puzzle8)?;
+    let _puzzle9 = vec![
+        "ships: 4sq x 1, 3sq x 2, ",
+        "       2sq x 3, 1sq x 3.",
+        "  60150213",
+        "3|        ",
+        "1|~       ",
+        "2|        ",
+        "4|     ~  ",
+        "2|        ",
+        "2|      ☐ ",
+        "3|        ",
+        "1|        ",
+    ];
+
+    let mut board = Board::new(&_puzzle9)?;
 
     let is_solved = solve(&mut board)?;
 

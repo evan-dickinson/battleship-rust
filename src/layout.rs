@@ -19,6 +19,14 @@ impl<'a> Coord<'a> {
         self.layout.row_or_col(axis, index)
     }
 
+    pub fn row(&self) -> RowOrCol {
+        self.row_or_col(Axis::Row)
+    }
+
+    pub fn col(&self) -> RowOrCol {
+        self.row_or_col(Axis::Col)
+    }
+
     pub fn index_for_axis(&self, axis: Axis) -> usize {
         match axis {
             Axis::Row => self.row_num,
